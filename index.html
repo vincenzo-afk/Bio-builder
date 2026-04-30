@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aesthetic Bio Maker v2</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Playfair+Display:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body data-theme="dark">
+
+  <div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <span class="logo-mark">✦</span>
+        <span class="logo-text">Bio Maker</span>
+        <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Collapse">‹</button>
+      </div>
+
+      <div class="sidebar-section-label">Workspace</div>
+      <ul class="sidebar-nav">
+        <li><a href="#" class="sidebar-link is-active" data-section="generator">
+          <span class="nav-icon">⚡</span><span class="nav-label">Bio Generator</span>
+        </a></li>
+        <li><a href="#" class="sidebar-link" data-section="card">
+          <span class="nav-icon">🃏</span><span class="nav-label">Card Studio</span>
+        </a></li>
+        <li><a href="#" class="sidebar-link" data-section="fonts">
+          <span class="nav-icon">✍</span><span class="nav-label">Typography</span>
+        </a></li>
+        <li><a href="#" class="sidebar-link" data-section="symbols">
+          <span class="nav-icon">✦</span><span class="nav-label">Symbol Palette</span>
+        </a></li>
+        <li><a href="#" class="sidebar-link" data-section="variants">
+          <span class="nav-icon">⟡</span><span class="nav-label">Bio Variants</span>
+        </a></li>
+        <li><a href="#" class="sidebar-link" data-section="history">
+          <span class="nav-icon">🕘</span><span class="nav-label">History</span>
+        </a></li>
+        <li><a href="#" class="sidebar-link" data-section="presets">
+          <span class="nav-icon">🎯</span><span class="nav-label">Platform Presets</span>
+        </a></li>
+        <li><a href="#" class="sidebar-link" data-section="projects">
+          <span class="nav-icon">📁</span><span class="nav-label">Saved Projects</span>
+        </a></li>
+      </ul>
+
+      <div class="sidebar-section-label">Settings</div>
+      <ul class="sidebar-nav">
+        <li>
+          <div class="sidebar-setting">
+            <span class="nav-icon">🌙</span>
+            <span class="nav-label">Dark Mode</span>
+            <label class="toggle-pill">
+              <input type="checkbox" id="themeCheckbox" checked />
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+        </li>
+        <li>
+          <div class="sidebar-setting">
+            <span class="nav-icon">🔑</span>
+            <span class="nav-label">API Key</span>
+          </div>
+        </li>
+      </ul>
+
+      <div class="sidebar-bottom">
+        <span class="sidebar-version">v2.0</span>
+        <span class="sidebar-made">Aesthetic Bio Maker</span>
+      </div>
+    </nav>
+
+    <!-- MAIN -->
+    <div class="main-wrap" id="mainWrap">
+
+      <!-- TOPBAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn" id="sidebarToggleBtn" title="Toggle sidebar">☰</button>
+          <div class="breadcrumb">
+            <span id="breadcrumbSection">Bio Generator</span>
+          </div>
+        </div>
+        <div class="topbar-center">
+          <span class="topbar-brand">✦ Aesthetic Bio Maker</span>
+        </div>
+        <div class="topbar-right">
+          <button class="ghost-btn" id="saveProjectBtn">💾 Save Project</button>
+          <button class="ghost-btn" id="copyBtn">Copy Bio</button>
+          <button class="primary-btn" id="downloadBtn">Download PNG</button>
+        </div>
+      </header>
+
+      <!-- CONTENT -->
+      <div class="content-grid">
+
+        <!-- LEFT COLUMN -->
+        <div class="left-col">
+
+          <!-- HERO PANEL -->
+          <section class="panel hero-panel" data-block="hero">
+            <div class="hero-copy">
+              <p class="kicker">Build with intent</p>
+              <h1>Your aesthetic bio,<br />built in seconds.</h1>
+              <p class="hero-sub">Minimal Notion-style builder. Fill the blocks, generate with Groq AI, pick your card theme, then export a clean profile PNG.</p>
+            </div>
+            <div class="hero-meta">
+              <div class="meta-chip"><span>Engine</span><strong>Groq Llama 3.3</strong></div>
+              <div class="meta-chip"><span>Output</span><strong>Clipboard + PNG</strong></div>
+              <div class="meta-chip"><span>Themes</span><strong>4 card styles</strong></div>
+              <div class="meta-chip"><span>Variants</span><strong>3 bio versions</strong></div>
+            </div>
+          </section>
+
+          <!-- API KEY -->
+          <section class="panel" id="section-generator" data-block="generator">
+            <div class="panel-head">
+              <div>
+                <p class="kicker">Step 1</p>
+                <h2>API Setup</h2>
+              </div>
+            </div>
+            <div class="note-block">⚠ Paste your Groq API key below. It stays in your browser only. Never commit this to public code.</div>
+            <div class="form-row">
+              <div class="field span-2">
+                <label for="apiKey">Groq API Key</label>
+                <input id="apiKey" type="password" placeholder="gsk_..." />
+              </div>
+            </div>
+          </section>
+
+          <!-- BIO FORM -->
+          <section class="panel" data-block="form">
+            <div class="panel-head">
+              <div>
+                <p class="kicker">Step 2</p>
+                <h2>Profile Details</h2>
+              </div>
+              <div class="panel-actions">
+                <button class="ghost-btn small" id="clearBtn" type="button">Clear all</button>
+              </div>
+            </div>
+
+            <form id="bioForm" autocomplete="off">
+              <div class="form-grid">
+
+                <div class="field">
+                  <label for="displayName">Full name</label>
+                  <input id="displayName" type="text" placeholder="Your name" />
+                </div>
+                <div class="field">
+                  <label for="handle">Handle</label>
+                  <input id="handle" type="text" placeholder="@yourhandle" />
+                </div>
+
+                <div class="field">
+                  <label for="platform">Platform</label>
+                  <select id="platform">
+                    <option>Instagram</option>
+                    <option>X / Twitter</option>
+                    <option>TikTok</option>
+                    <option>Discord</option>
+                    <option>GitHub</option>
+                    <option>LinkedIn</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="tone">Tone</label>
+                  <select id="tone">
+                    <option>Minimal</option>
+                    <option>Poetic</option>
+                    <option>Bold</option>
+                    <option>Soft</option>
+                    <option>Techy</option>
+                    <option>Mysterious</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="aesthetic">Aesthetic</label>
+                  <select id="aesthetic">
+                    <option>Notion</option>
+                    <option>Dark Academia</option>
+                    <option>Soft Girl</option>
+                    <option>Cyberpunk</option>
+                    <option>Clean Founder</option>
+                    <option>Dreamy</option>
+                    <option>Cottagecore</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="cardThemeSelect">Card theme</label>
+                  <select id="cardThemeSelect">
+                    <option value="notion">Notion</option>
+                    <option value="glass">Glass</option>
+                    <option value="paper">Paper</option>
+                    <option value="neon">Neon</option>
+                  </select>
+                </div>
+
+                <div class="field span-2">
+                  <label for="titleLine">Identity line</label>
+                  <input id="titleLine" type="text" placeholder="AI engineer · full stack dev · experimental builder" />
+                </div>
+
+                <div class="field span-2">
+                  <label for="keywords">Keywords (comma-separated)</label>
+                  <input id="keywords" type="text" placeholder="AI, autonomous agents, vision, open source" />
+                </div>
+
+                <div class="field span-2">
+                  <label for="about">About / vibe / context</label>
+                  <textarea id="about" rows="3" placeholder="I build experimental AI systems, minimal tools, and things with personality..."></textarea>
+                </div>
+
+                <div class="field">
+                  <label for="cta">CTA / closing line</label>
+                  <input id="cta" type="text" placeholder="building cool things daily" />
+                </div>
+                <div class="field">
+                  <label for="location">Location</label>
+                  <input id="location" type="text" placeholder="Chennai, India" />
+                </div>
+
+                <div class="field span-2">
+                  <label for="avatarUpload">Profile avatar</label>
+                  <input id="avatarUpload" type="file" accept="image/*" />
+                </div>
+
+                <div class="field">
+                  <label for="websiteUrl">Website</label>
+                  <input id="websiteUrl" type="url" placeholder="https://your.site" />
+                </div>
+                <div class="field">
+                  <label for="githubUrl">GitHub</label>
+                  <input id="githubUrl" type="url" placeholder="https://github.com/you" />
+                </div>
+                <div class="field">
+                  <label for="twitterUrl">X / Twitter</label>
+                  <input id="twitterUrl" type="url" placeholder="https://x.com/you" />
+                </div>
+                <div class="field">
+                  <label for="instagramUrl">Instagram</label>
+                  <input id="instagramUrl" type="url" placeholder="https://instagram.com/you" />
+                </div>
+
+              </div>
+
+              <div class="toolbar">
+                <button class="primary-btn" id="generateBtn" type="submit">⚡ Generate Bio</button>
+                <button class="ghost-btn" id="generateVariantsBtn" type="button">⟡ Generate 3 Variants</button>
+              </div>
+            </form>
+          </section>
+
+          <!-- OUTPUT -->
+          <section class="panel" data-block="output">
+            <div class="panel-head">
+              <div>
+                <p class="kicker">Step 3</p>
+                <h2>Generated Bio</h2>
+              </div>
+              <div class="panel-actions">
+                <span id="charCount" class="meta-label">0 chars</span>
+                <span id="statusText" class="meta-label">Ready.</span>
+              </div>
+            </div>
+            <textarea id="bioOutput" rows="5" placeholder="Your generated bio appears here..."></textarea>
+          </section>
+
+          <!-- BIO VARIANTS -->
+          <section class="panel" id="section-variants" data-block="variants">
+            <div class="panel-head">
+              <div>
+                <p class="kicker">Choose your style</p>
+                <h2>Bio Variants</h2>
+              </div>
+            </div>
+            <p class="helper">Three different versions of your bio — pick any one to load it.</p>
+            <div id="variantsList" class="variants-grid">
+              <div class="variant-empty">Generate 3 variants using the button above to compare styles.</div>
+            </div>
+          </section>
+
+          <!-- TYPOGRAPHY -->
+          <section class="panel" id="section-fonts" data-block="fonts">
+            <div class="panel-head">
+              <div>
+                <p class="kicker">Typography</p>
+                <h2>Bio Font Style</h2>
+              </div>
+            </div>
+            <div id="fontStyles" class="chip-row">
+              <button class="chip is-active" data-font="clean">Clean Sans</button>
+              <button class="chip" data-font="serif">Serif</button>
+              <button class="chip" data-font="mono">Mono</button>
+              <button class="chip" data-font="editorial">Editorial</button>
+              <button class="chip" data-font="space">Space Grotesk</button>
+            </div>
+            <p class="helper">Updates both the output area and the live preview card instantly.</p>
+          </section>
+
+          <!-- SYMBOL PALETTE -->
+          <section class="panel" id="section-symbols" data-block="symbols">
+            <div class="panel-head">
+              <div>
+                <p class="kicker">Aesthetics</p>
+                <h2>Symbol Palette</h2>
+              </div>
+            </div>
+            <div id="symbolPalette" class="symbol-grid"></div>
+            <p class="helper">Click any symbol to insert it at your cursor in the focused field.</p>
+          </section>
+
+          <!-- PLATFORM PRESETS -->
+          <section class="panel" id="section-presets" data-block="presets">
+            <div class="panel-head">
+              <div>
+                <p class="kicker">Quick setup</p>
+                <h2>Platform Presets</h2>
+              </div>
+            </div>
+            <p class="helper">One click loads the ideal tone, aesthetic, char limit, and suggestions for each platform.</p>
+            <div id="presetGrid" class="preset-grid"></div>
+          </section>
+
+          <!-- HISTORY -->
+          <section class="panel" id="section-history" data-block="history">
+            <div class="panel-head">
+              <div>
+                <p class="kicker">Auto-saved</p>
+                <h2>Bio History</h2>
+              </div>
+              <button class="ghost-btn small" id="clearHistoryBtn">Clear all</button>
+            </div>
+            <ul id="historyList" class="history-list"></ul>
+          </section>
+
+          <!-- SAVED PROJECTS -->
+          <section class="panel" id="section-projects" data-block="projects">
+            <div class="panel-head">
+              <div>
+                <p class="kicker">Local storage</p>
+                <h2>Saved Projects</h2>
+              </div>
+            </div>
+            <p class="helper">Save your current form as a named project and restore it later.</p>
+            <div class="project-save-row">
+              <input id="projectName" type="text" placeholder="Project name..." />
+              <button class="primary-btn" id="saveProjectConfirmBtn">Save</button>
+            </div>
+            <ul id="projectsList" class="projects-list"></ul>
+          </section>
+
+        </div>
+
+        <!-- RIGHT COLUMN (CARD STUDIO) -->
+        <aside class="right-col" id="section-card">
+          <section class="panel preview-panel sticky-panel">
+            <div class="panel-head">
+              <div>
+                <p class="kicker">Live preview</p>
+                <h2>Card Studio</h2>
+              </div>
+            </div>
+
+            <!-- Card theme tabs -->
+            <div id="cardThemeTabs" class="chip-row">
+              <button class="chip is-active" data-card-theme="notion">Notion</button>
+              <button class="chip" data-card-theme="glass">Glass</button>
+              <button class="chip" data-card-theme="paper">Paper</button>
+              <button class="chip" data-card-theme="neon">Neon</button>
+            </div>
+
+            <!-- Card canvas -->
+            <div class="card-stage">
+              <div id="captureCard" class="profile-card theme-notion font-clean">
+
+                <div class="card-noise"></div>
+
+                <div class="card-header">
+                  <div class="avatar-wrap">
+                    <img id="previewAvatar" alt="avatar" />
+                  </div>
+                  <div class="identity-block">
+                    <p id="previewName" class="card-name">Your Name</p>
+                    <span id="previewHandle" class="card-handle">@username</span>
+                  </div>
+                </div>
+
+                <div class="badge-row">
+                  <span id="badgePlatform" class="badge">Instagram</span>
+                  <span id="badgeTone" class="badge">Minimal</span>
+                  <span id="badgeAesthetic" class="badge">Notion</span>
+                </div>
+
+                <p id="previewTitle" class="card-title">Creative builder with a minimal internet presence.</p>
+
+                <p id="previewBio" class="card-bio">Your generated bio will live here. Fill in the form and export as PNG.</p>
+
+                <div id="previewLinks" class="link-row">
+                  <span class="empty-link-pill">Add links to show badges</span>
+                </div>
+
+                <div class="card-footer">
+                  <span id="previewLocation">📍 Chennai, India</span>
+                  <span id="previewCTA" class="cta-text">building cool things daily</span>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Card actions -->
+            <div class="card-actions">
+              <button class="ghost-btn full-w" id="copyBtnCard">📋 Copy Bio</button>
+              <button class="primary-btn full-w" id="downloadBtnCard">⬇ Download PNG</button>
+            </div>
+
+          </section>
+        </aside>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
