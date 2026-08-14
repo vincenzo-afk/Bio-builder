@@ -254,11 +254,22 @@
                   <input id="instagramUrl" type="url" placeholder="https://instagram.com/you" />
                 </div>
 
+                <!-- Custom link slots: add extra links beyond the fixed four. -->
+                <div class="field span-2">
+                  <div class="custom-links-head">
+                    <label>More links</label>
+                    <button class="ghost-btn small" id="addLinkBtn" type="button">＋ Add link</button>
+                  </div>
+                  <div id="customLinksList"></div>
+                  <p class="helper">Up to 4 extra links (e.g. TikTok, YouTube, LinkedIn, portfolio). They appear on the card and PNG.</p>
+                </div>
+
               </div>
 
               <div class="toolbar">
                 <button class="primary-btn" id="generateBtn" type="submit">⚡ Generate Bio</button>
                 <button class="ghost-btn" id="generateVariantsBtn" type="button">⟡ Generate 3 Variants</button>
+                <button class="ghost-btn" id="shareStateBtn" type="button" title="Copy a link that restores this exact setup">↗ Share setup</button>
               </div>
             </form>
           </section>
@@ -423,7 +434,15 @@
             <!-- Card actions -->
             <div class="card-actions">
               <button class="ghost-btn full-w" id="copyBtnCard">📋 Copy Bio</button>
-              <button class="primary-btn full-w" id="downloadBtnCard">⬇ Download PNG</button>
+              <div class="export-row">
+                <select id="exportSize" title="Export size preset">
+                  <option value="card">Card (2.5×)</option>
+                  <option value="square-1080">Instagram post 1:1</option>
+                  <option value="story-1080x1920">Story 9:16</option>
+                  <option value="banner-1500x500">Banner 3:1</option>
+                </select>
+                <button class="primary-btn full-w" id="downloadBtnCard">⬇ Download PNG</button>
+              </div>
             </div>
 
           </section>

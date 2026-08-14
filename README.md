@@ -17,6 +17,9 @@ Everything runs in the browser. Your data (form values, API key, bio history, sa
 | **Symbol palette** | Click any aesthetic symbol to insert it at your cursor |
 | **Platform presets** | One-click setup for Instagram, X, TikTok, Discord, GitHub, LinkedIn |
 | **PNG export** | Download your card as a PNG via html2canvas |
+| **Export sizes** | Card (2.5×), Instagram post 1:1 (1080), Story 9:16 (1080×1920), Banner 3:1 (1500×500) |
+| **Extra link slots** | Up to 4 additional custom links (TikTok, YouTube, LinkedIn, portfolio…) |
+| **Share setup** | Copy a link that restores your exact form when opened |
 | **History** | Last 5 generated bios auto-saved locally |
 | **Saved projects** | Name and restore full form configurations |
 | **Theme** | Dark/light mode, remembered between visits |

@@ -366,6 +366,56 @@ input[type="file"] {
   gap: 10px;
   margin-top: 14px;
 }
+.export-row {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.export-row select {
+  width: 100%;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+/* ===== CUSTOM LINK SLOTS ===== */
+.custom-links-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+.custom-link-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 30px;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.custom-link-row input {
+  margin-bottom: 0;
+}
+.custom-link-row .link-row-delete {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 1rem;
+  cursor: pointer;
+  width: 30px; height: 30px;
+  border-radius: 10px;
+  display: grid; place-items: center;
+}
+.custom-link-row .link-row-delete:hover { background: rgba(255,140,140,0.12); }
+@media (max-width: 640px) {
+  .custom-link-row { grid-template-columns: 1fr; }
+}
 .project-save-row {
   display: flex;
   gap: 10px;

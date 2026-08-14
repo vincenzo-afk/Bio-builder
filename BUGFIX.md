@@ -41,6 +41,16 @@ ESLint flagged the CDN-provided `html2canvas` as an undefined variable.
 | **README rewrite** | The README was a single heading. It now documents features, usage, development commands, and the local-storage guarantees. |
 | **Lint script & CI** | `package.json` now has `npm run lint`, ESLint as a dev dependency, and a GitHub Actions workflow lints `app.js` on every push and pull request. |
 
+## New Features Added
+
+| Feature | Description |
+| --- | --- |
+| **Share setup link** | The "↗ Share setup" button encodes the complete form state (all fields, card theme, font, custom links, API key presence) into the URL hash. Opening the link restores the exact setup — zero backend, works by URL alone. |
+| **Extra link slots** | Up to 4 additional custom links (e.g. TikTok, YouTube, LinkedIn, portfolio). Rows are added/removed dynamically, auto-persisted, capped at 4, and render as pills on both the preview card and the PNG export alongside the built-in Website/GitHub/X/Instagram links. |
+| **PNG export size presets** | Download the card at Card (2.5× native), Instagram post 1:1 (1080×1080), Story 9:16 (1080×1920), or Banner 3:1 (1500×500). The card is render-fit (contain, centered, transparent padding) so it is never cropped or stretched. |
+
+Implementation notes: two bugs were found and fixed while building the custom-link rows — the `$$` helper returns a `NodeList` (which has no `.map`), and mid-typing persistence was losing rows because gathering kept only *complete* links; both are corrected (raw rows persist, so in-progress entries survive a reload).
+
 ## Verification Performed
 
 | Check | Result |
@@ -52,4 +62,7 @@ ESLint flagged the CDN-provided `html2canvas` as an undefined variable.
 | API key input → `localStorage` | Persisted and restored on reload |
 | API Key settings row click | Focuses the API key field |
 | Preset card Enter key | Applies the preset |
+| Custom links add/remove, pill render, persistence, 4-link cap | All verified |
+| Share setup encode → clear → restore round-trip | All fields and custom links restored |
+| Export presets (card / 1:1 / 9:16 / 3:1) | Exact pixel dimensions, no crop, no stretch |
 | ESLint (`npm run lint`) | 0 errors, 0 warnings |
