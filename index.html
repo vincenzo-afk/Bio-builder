@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aesthetic Bio Maker v2</title>
+  <title>Aesthetic Bio Maker v2 — Minimal Notion-Style Bio Builder</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23161616'/%3E%3Ctext x='50%25' y='57%25' text-anchor='middle' fill='%23f0f0ee' font-size='34' font-weight='700' font-family='Inter%2CArial%2Csans-serif'%3E✦%3C/text%3E%3C/svg%3E" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -15,6 +16,7 @@
 <body data-theme="dark">
 
   <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
 
     <!-- SIDEBAR -->
     <nav class="sidebar" id="sidebar">
@@ -65,7 +67,7 @@
           </div>
         </li>
         <li>
-          <div class="sidebar-setting">
+          <div class="sidebar-setting" id="apiKeySetting" role="button" tabindex="0">
             <span class="nav-icon">🔑</span>
             <span class="nav-label">API Key</span>
           </div>

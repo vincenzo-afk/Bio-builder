@@ -8,6 +8,7 @@ const $$ = (sel, ctx = document) => ctx.querySelectorAll(sel);
 const R = {
   body:                 document.body,
   sidebar:              $("sidebar"),
+  sidebarBackdrop:      $("sidebarBackdrop"),
   sidebarCollapseBtn:   $("sidebarCollapseBtn"),
   sidebarToggleBtn:     $("sidebarToggleBtn"),
   themeCheckbox:        $("themeCheckbox"),
@@ -76,6 +77,7 @@ const LS = {
   history:   "abm2_history",
   projects:  "abm2_projects",
   sidebar:   "abm2_sidebar",
+  apiKey:    "abm2_apikey",
 };
 
 const SYMBOLS = [
@@ -143,6 +145,12 @@ function loadPrefs() {
   state.projects = p;
   state.sidebarCollapsed = s === "1";
   R.themeCheckbox.checked = state.theme === "dark";
+
+  // Restore previously saved Groq API key so it isn't lost between visits.
+  // It never leaves this device (localStorage only).
+  const savedKey = ls(LS.apiKey);
+  if (savedKey) { R.apiKey.value = savedKey; }
+  R.apiKey.addEventListener("input", () => lsSet(LS.apiKey, R.apiKey.value.trim()));
 }
 
 // ─── BIND ────────────────────────────────────────────────────────────────────
@@ -264,11 +272,26 @@ function bindAll() {
 function collapseSidebar(collapsed) {
   state.sidebarCollapsed = collapsed;
   R.sidebar.classList.toggle("collapsed", collapsed);
+  // On mobile the sidebar is a fixed overlay; show the backdrop so tapping
+  // outside closes it (the overlay otherwise has no close affordance).
+  const isMobile = window.matchMedia("(max-width: 640px)").matches;
+  R.sidebarBackdrop.classList.toggle("is-open", isMobile && !collapsed);
   lsSet(LS.sidebar, collapsed ? "1" : "0");
 }
 
+R.sidebarBackdrop.addEventListener("click", () => collapseSidebar(true));
+
+// Settings > API Key row: jump to the API key field so the row actually does something.
+const apiKeySetting = $("apiKeySetting");
+function openApiKeyField() {
+  R.apiKey.focus();
+  R.apiKey.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+apiKeySetting.addEventListener("click", openApiKeyField);
+apiKeySetting.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openApiKeyField(); } });
+
 function scrollToSection(section) {
-  const el = document.querySelector(`[data-block="${section}"]`) || $(`section-${section}`);
+  const el = document.querySelector(`[data-block="${section}"]`) || document.getElementById(`section-${section}`);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -360,6 +383,17 @@ function buildPresets() {
     const card = e.target.closest("[data-preset]");
     if (!card) return;
     applyPreset(card.dataset.preset);
+  });
+
+  // Keyboard activation for preset cards (role="button" + tabindex="0")
+  R.presetGrid.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      const card = e.target.closest("[data-preset]");
+      if (card) {
+        e.preventDefault();
+        applyPreset(card.dataset.preset);
+      }
+    }
   });
 }
 
@@ -552,7 +586,7 @@ function renderLinkPills() {
     { label: "GitHub",    url: R.githubUrl.value.trim() },
     { label: "X",         url: R.twitterUrl.value.trim() },
     { label: "Instagram", url: R.instagramUrl.value.trim() },
-  ].filter((l) => l.url);
+  ].map((l) => ({ ...l, url: safeUrl(l.url) })).filter((l) => l.url);
 
   if (!links.length) {
     R.previewLinks.innerHTML = `<span class="empty-link-pill">Add links to show badges</span>`;
@@ -784,7 +818,17 @@ function setStatus(msg, type = "") {
 // ─── UTILS ───────────────────────────────────────────────────────────────────
 
 function fmtHandle(v) { return v.startsWith("@") ? v : `@${v}`; }
-function safeUrl(v) { return /^https?:\/\//i.test(v) ? v : `https://${v}`; }
+// Only accept well-formed http(s) URLs. Control characters / whitespace are
+// stripped before parsing, then the URL must resolve with an http(s) scheme.
+function safeUrl(v) {
+  const clean = String(v).split("").filter((ch) => ch.charCodeAt(0) > 0x1F && ch.charCodeAt(0) !== 0x7F).join("").trim();
+  if (!clean) return "";
+  try {
+    const u = new URL(clean);
+    if (u.protocol === "http:" || u.protocol === "https:") return u.href;
+  } catch { /* Malformed URL — treat as invalid. */ }
+  return "";
+}
 function slugify(t) { return t.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
 
 function esc(str) {
@@ -794,8 +838,8 @@ function esc(str) {
 }
 function escAttr(str) { return esc(str).replace(/`/g, ""); }
 
-function ls(key)          { try { return localStorage.getItem(key); } catch { return null; } }
-function lsSet(key, val)  { try { localStorage.setItem(key, val); } catch {} }
+function ls(key) { try { return localStorage.getItem(key); } catch { return null; } }
+function lsSet(key, val) { try { localStorage.setItem(key, val); } catch { /* Deliberately silent: storage may be full or disabled. */ } }
 function lsJSON(key, def) {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch { return def; }
 }
