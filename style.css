@@ -12,6 +12,20 @@ body {
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 a { color: inherit; text-decoration: none; }
+
+/* ===== FOCUS VISIBLE (keyboard navigation) ===== */
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible) {
+  outline: none;
+}
+.preset-card:focus-visible { outline-offset: -2px; }
 h1, h2, h3, p { margin: 0; }
 img { display: block; max-width: 100%; }
 ul { list-style: none; }
@@ -351,6 +365,56 @@ input[type="file"] {
   display: flex;
   gap: 10px;
   margin-top: 14px;
+}
+.export-row {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.export-row select {
+  width: 100%;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+/* ===== CUSTOM LINK SLOTS ===== */
+.custom-links-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+.custom-link-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 30px;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.custom-link-row input {
+  margin-bottom: 0;
+}
+.custom-link-row .link-row-delete {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 1rem;
+  cursor: pointer;
+  width: 30px; height: 30px;
+  border-radius: 10px;
+  display: grid; place-items: center;
+}
+.custom-link-row .link-row-delete:hover { background: rgba(255,140,140,0.12); }
+@media (max-width: 640px) {
+  .custom-link-row { grid-template-columns: 1fr; }
 }
 .project-save-row {
   display: flex;
@@ -733,8 +797,23 @@ input[type="file"] {
   .field.span-2 { grid-column: span 1; }
   .topbar-center { display: none; }
 }
+/* Mobile sidebar overlay backdrop */
+.sidebar-backdrop {
+  display: none;
+}
+
 @media (max-width: 640px) {
-  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 200; transform: translateX(0); }
+  .sidebar-backdrop {
+    display: block;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 150;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+  }
+  .sidebar-backdrop.is-open { opacity: 1; visibility: visible; }
+  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 200; transform: translateX(0); transition: transform 0.28s cubic-bezier(0.4,0,0.2,1), width 0.28s cubic-bezier(0.4,0,0.2,1), min-width 0.28s cubic-bezier(0.4,0,0.2,1); }
   .sidebar.collapsed { transform: translateX(-100%); }
   .app-shell { flex-direction: column; }
   .main-wrap { height: auto; overflow: visible; }

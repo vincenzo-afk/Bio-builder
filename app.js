@@ -8,6 +8,7 @@ const $$ = (sel, ctx = document) => ctx.querySelectorAll(sel);
 const R = {
   body:                 document.body,
   sidebar:              $("sidebar"),
+  sidebarBackdrop:      $("sidebarBackdrop"),
   sidebarCollapseBtn:   $("sidebarCollapseBtn"),
   sidebarToggleBtn:     $("sidebarToggleBtn"),
   themeCheckbox:        $("themeCheckbox"),
@@ -29,6 +30,10 @@ const R = {
   githubUrl:            $("githubUrl"),
   twitterUrl:           $("twitterUrl"),
   instagramUrl:         $("instagramUrl"),
+  customLinksList:      $("customLinksList"),
+  addLinkBtn:           $("addLinkBtn"),
+  shareStateBtn:        $("shareStateBtn"),
+  exportSize:           $("exportSize"),
   avatarUpload:         $("avatarUpload"),
   generateBtn:          $("generateBtn"),
   generateVariantsBtn:  $("generateVariantsBtn"),
@@ -76,6 +81,7 @@ const LS = {
   history:   "abm2_history",
   projects:  "abm2_projects",
   sidebar:   "abm2_sidebar",
+  apiKey:    "abm2_apikey",
 };
 
 const SYMBOLS = [
@@ -95,6 +101,80 @@ const PLATFORM_PRESETS = [
 ];
 
 const VARIANT_LABELS = ["Minimal", "Poetic", "Bold"];
+
+// Custom (extra) link slots beyond the fixed four. Each slot has a label + URL.
+const MAX_CUSTOM_LINKS = 4;
+const LS_CUSTOM_LINKS = "abm2_custom_links";
+
+function loadCustomLinks() {
+  return lsJSON(LS_CUSTOM_LINKS, []).slice(0, MAX_CUSTOM_LINKS);
+}
+
+function applyCustomLinks(links) {
+  R.customLinksList.innerHTML = links.slice(0, MAX_CUSTOM_LINKS)
+    .map((l) => `
+      <div class="custom-link-row">
+        <input type="text" data-cl-label placeholder="Label" value="${escAttr(l.label || "")}" />
+        <input type="url"  data-cl-url    placeholder="https://..." value="${escAttr(l.url || "")}" />
+        <button class="link-row-delete" data-cl-del aria-label="Remove link">×</button>
+      </div>
+    `)
+    .join("");
+}
+
+// Persist every row (including partially filled ones) so nothing is lost mid-type.
+function gatherCustomLinksRaw() {
+  return [...$$(".custom-link-row", R.customLinksList)].map((row) => ({
+    label: row.querySelector("[data-cl-label]").value.trim(),
+    url: row.querySelector("[data-cl-url]").value.trim(),
+  })).slice(0, MAX_CUSTOM_LINKS);
+}
+function gatherCustomLinks() {
+  return gatherCustomLinksRaw().filter((l) => l.label && l.url);
+}
+
+function renderCustomLinks() {
+  R.customLinksList.innerHTML = loadCustomLinks()
+    .map((l, i) => `
+      <div class="custom-link-row">
+        <input type="text" data-cl-label placeholder="Label" value="${escAttr(l.label)}" />
+        <input type="url"  data-cl-url    placeholder="https://..." value="${escAttr(l.url)}" />
+        <button class="link-row-delete" data-cl-del data-idx="${i}" aria-label="Remove link">×</button>
+      </div>
+    `)
+    .join("");
+}
+
+function saveCustomLinksLS() {
+  lsSet(LS_CUSTOM_LINKS, JSON.stringify(gatherCustomLinksRaw()));
+}
+
+R.customLinksList.addEventListener("input", () => { saveCustomLinksLS(); updatePreview(); });
+R.customLinksList.addEventListener("change", () => { saveCustomLinksLS(); updatePreview(); });
+R.customLinksList.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-cl-del]");
+  if (btn) {
+    btn.closest(".custom-link-row").remove();
+    saveCustomLinksLS();
+    updatePreview();
+  }
+});
+R.addLinkBtn.addEventListener("click", () => {
+  if (gatherCustomLinksRaw().length >= MAX_CUSTOM_LINKS) {
+    setStatus(`Max ${MAX_CUSTOM_LINKS} extra links.`, "error");
+    return;
+  }
+  const row = document.createElement("div");
+  row.className = "custom-link-row";
+  row.innerHTML = `
+    <input type="text" data-cl-label placeholder="Label" />
+    <input type="url"  data-cl-url    placeholder="https://..." />
+    <button class="link-row-delete" data-cl-del aria-label="Remove link">×</button>
+  `;
+  R.customLinksList.appendChild(row);
+  saveCustomLinksLS();
+  row.querySelector("[data-cl-label]").focus();
+});
 
 // ─── STATE ──────────────────────────────────────────────────────────────────
 
@@ -119,6 +199,8 @@ document.addEventListener("DOMContentLoaded", () => {
   applyTheme(state.theme);
   setFont(state.font);
   setCardTheme(state.cardTheme);
+  renderCustomLinks();
+  loadShareState();
   renderHistory();
   renderProjects();
   updatePreview();
@@ -143,6 +225,12 @@ function loadPrefs() {
   state.projects = p;
   state.sidebarCollapsed = s === "1";
   R.themeCheckbox.checked = state.theme === "dark";
+
+  // Restore previously saved Groq API key so it isn't lost between visits.
+  // It never leaves this device (localStorage only).
+  const savedKey = ls(LS.apiKey);
+  if (savedKey) { R.apiKey.value = savedKey; }
+  R.apiKey.addEventListener("input", () => lsSet(LS.apiKey, R.apiKey.value.trim()));
 }
 
 // ─── BIND ────────────────────────────────────────────────────────────────────
@@ -264,11 +352,26 @@ function bindAll() {
 function collapseSidebar(collapsed) {
   state.sidebarCollapsed = collapsed;
   R.sidebar.classList.toggle("collapsed", collapsed);
+  // On mobile the sidebar is a fixed overlay; show the backdrop so tapping
+  // outside closes it (the overlay otherwise has no close affordance).
+  const isMobile = window.matchMedia("(max-width: 640px)").matches;
+  R.sidebarBackdrop.classList.toggle("is-open", isMobile && !collapsed);
   lsSet(LS.sidebar, collapsed ? "1" : "0");
 }
 
+R.sidebarBackdrop.addEventListener("click", () => collapseSidebar(true));
+
+// Settings > API Key row: jump to the API key field so the row actually does something.
+const apiKeySetting = $("apiKeySetting");
+function openApiKeyField() {
+  R.apiKey.focus();
+  R.apiKey.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+apiKeySetting.addEventListener("click", openApiKeyField);
+apiKeySetting.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openApiKeyField(); } });
+
 function scrollToSection(section) {
-  const el = document.querySelector(`[data-block="${section}"]`) || $(`section-${section}`);
+  const el = document.querySelector(`[data-block="${section}"]`) || document.getElementById(`section-${section}`);
   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -360,6 +463,17 @@ function buildPresets() {
     const card = e.target.closest("[data-preset]");
     if (!card) return;
     applyPreset(card.dataset.preset);
+  });
+
+  // Keyboard activation for preset cards (role="button" + tabindex="0")
+  R.presetGrid.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      const card = e.target.closest("[data-preset]");
+      if (card) {
+        e.preventDefault();
+        applyPreset(card.dataset.preset);
+      }
+    }
   });
 }
 
@@ -552,7 +666,10 @@ function renderLinkPills() {
     { label: "GitHub",    url: R.githubUrl.value.trim() },
     { label: "X",         url: R.twitterUrl.value.trim() },
     { label: "Instagram", url: R.instagramUrl.value.trim() },
-  ].filter((l) => l.url);
+  ].map((l) => ({ ...l, url: safeUrl(l.url) })).filter((l) => l.url);
+
+  // Custom link slots (extra links beyond the fixed four)
+  links.push(...gatherCustomLinks().map((l) => ({ label: l.label, url: safeUrl(l.url) })).filter((l) => l.url));
 
   if (!links.length) {
     R.previewLinks.innerHTML = `<span class="empty-link-pill">Add links to show badges</span>`;
@@ -602,13 +719,46 @@ async function copyBio() {
 
 // ─── DOWNLOAD PNG ────────────────────────────────────────────────────────────
 
+// Export size presets. For fixed-size targets the card is rendered into a
+// temporary staged wrapper sized to the target aspect, so html2canvas captures
+// exactly the output dimensions (no letterboxing).
+const EXPORT_SIZES = {
+  card:              { w: null,   h: null,   suffix: "" },
+  "square-1080":     { w: 1080,   h: 1080,   suffix: "-1080x1080" },
+  "story-1080x1920": { w: 1080,   h: 1920,   suffix: "-1080x1920" },
+  "banner-1500x500": { w: 1500,   h: 500,    suffix: "-1500x500" },
+};
+
 async function downloadCard() {
   try {
     setStatus("Rendering PNG...");
-    const canvas = await html2canvas(R.captureCard, { backgroundColor: null, scale: 2.5, useCORS: true, logging: false });
+    const sizeKey = R.exportSize.value;
+    const target = EXPORT_SIZES[sizeKey] || EXPORT_SIZES.card;
+    let canvas;
+
+    // Render the preview card natively (2.5×), then contain-fit it onto the
+    // selected target canvas. Pure canvas math — no DOM staging quirks — so
+    // the card is never cropped or stretched, whatever the target aspect.
+    const base = await html2canvas(R.captureCard, { backgroundColor: null, scale: 2.5, useCORS: true, logging: false });
+
+    if (!target.w) {
+      canvas = base;
+    } else {
+      // Contain: scale the base render to fit inside target.w × target.h,
+      // centered with transparent padding.
+      const scale = Math.min(target.w / base.width, target.h / base.height);
+      const dw = Math.round(base.width * scale);
+      const dh = Math.round(base.height * scale);
+      canvas = document.createElement("canvas");
+      canvas.width = target.w;
+      canvas.height = target.h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(base, Math.round((target.w - dw) / 2), Math.round((target.h - dh) / 2), dw, dh);
+    }
+
     const link = document.createElement("a");
     link.href = canvas.toDataURL("image/png");
-    link.download = `${slugify(R.displayName.value.trim() || "aesthetic-bio")}-card.png`;
+    link.download = `${slugify(R.displayName.value.trim() || "aesthetic-bio")}-card${target.suffix}.png`;
     link.click();
     setStatus("PNG downloaded.", "ok");
   } catch (err) {
@@ -627,9 +777,57 @@ function clearForm() {
   R.tone.value      = "Minimal";
   R.aesthetic.value = "Notion";
   setCardTheme("notion");
+  lsSet(LS_CUSTOM_LINKS, "[]");
+  renderCustomLinks();
   updatePreview();
   setStatus("Form cleared.");
 }
+
+// ─── SHARE STATE ─────────────────────────────────────────────────────────────
+
+// Encode the current setup (excluding the API key and avatar) into a URL so the
+// whole form can be restored by anyone opening the link. Everything in the URL
+// is validated when decoded, so malformed payloads just fail silently.
+function buildSharePayload() {
+  return {
+    ...gatherForm(),
+    avatarData: "", // avatars are too large for a URL — dropped from share links
+  };
+}
+
+async function shareState() {
+  let url;
+  try {
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(buildSharePayload()))));
+    url = `${window.location.origin}${window.location.pathname}?share=${encoded}`;
+  } catch (err) {
+    console.error(err);
+    setStatus("Share failed — setup too large to encode.", "error");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    setStatus("Share link copied to clipboard.", "ok");
+  } catch {
+    setStatus("Copied to clipboard failed — try again.", "error");
+  }
+}
+
+function loadShareState() {
+  const params = new URLSearchParams(window.location.search);
+  const share = params.get("share");
+  if (!share) return;
+
+  try {
+    const parsed = JSON.parse(decodeURIComponent(escape(atob(share))));
+    if (parsed && typeof parsed === "object") applyForm(parsed);
+    setStatus("Setup restored from shared link.", "ok");
+  } catch {
+    console.warn("Share link could not be decoded.");
+  }
+}
+
+R.shareStateBtn.addEventListener("click", shareState);
 
 // ─── HISTORY ─────────────────────────────────────────────────────────────────
 
@@ -687,6 +885,7 @@ function gatherForm() {
     githubUrl:    R.githubUrl.value,
     twitterUrl:   R.twitterUrl.value,
     instagramUrl: R.instagramUrl.value,
+    customLinks:  gatherCustomLinks(),
     bioOutput:    R.bioOutput.value,
     cardTheme:    state.cardTheme,
     font:         state.font,
@@ -708,6 +907,7 @@ function applyForm(data) {
   R.githubUrl.value    = data.githubUrl    || "";
   R.twitterUrl.value   = data.twitterUrl   || "";
   R.instagramUrl.value = data.instagramUrl || "";
+  applyCustomLinks(data.customLinks || []);
   R.bioOutput.value    = data.bioOutput    || "";
   if (data.cardTheme) setCardTheme(data.cardTheme);
   if (data.font) setFont(data.font);
@@ -784,7 +984,17 @@ function setStatus(msg, type = "") {
 // ─── UTILS ───────────────────────────────────────────────────────────────────
 
 function fmtHandle(v) { return v.startsWith("@") ? v : `@${v}`; }
-function safeUrl(v) { return /^https?:\/\//i.test(v) ? v : `https://${v}`; }
+// Only accept well-formed http(s) URLs. Control characters / whitespace are
+// stripped before parsing, then the URL must resolve with an http(s) scheme.
+function safeUrl(v) {
+  const clean = String(v).split("").filter((ch) => ch.charCodeAt(0) > 0x1F && ch.charCodeAt(0) !== 0x7F).join("").trim();
+  if (!clean) return "";
+  try {
+    const u = new URL(clean);
+    if (u.protocol === "http:" || u.protocol === "https:") return u.href;
+  } catch { /* Malformed URL — treat as invalid. */ }
+  return "";
+}
 function slugify(t) { return t.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
 
 function esc(str) {
@@ -794,8 +1004,8 @@ function esc(str) {
 }
 function escAttr(str) { return esc(str).replace(/`/g, ""); }
 
-function ls(key)          { try { return localStorage.getItem(key); } catch { return null; } }
-function lsSet(key, val)  { try { localStorage.setItem(key, val); } catch {} }
+function ls(key) { try { return localStorage.getItem(key); } catch { return null; } }
+function lsSet(key, val) { try { localStorage.setItem(key, val); } catch { /* Deliberately silent: storage may be full or disabled. */ } }
 function lsJSON(key, def) {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch { return def; }
 }
