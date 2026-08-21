@@ -1,4 +1,4 @@
-# Aesthetic Bio Maker
+# ✦ Aesthetic Bio Maker
 
 A minimal, Notion-style bio builder. Fill in your profile details, generate an aesthetic bio with Groq AI, style it as a profile card, and export a clean PNG for your link-in-bio, Discord, GitHub, or anywhere else.
 
@@ -6,46 +6,59 @@ Everything runs in the browser. Your data (form values, API key, bio history, sa
 
 ![v2.0](https://img.shields.io/badge/version-v2.0-blue)
 [![Lint](https://github.com/vincenzo-afk/Bio-builder/actions/workflows/lint.yml/badge.svg)](https://github.com/vincenzo-afk/Bio-builder/actions/workflows/lint.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features
+## ⚡ Features
 
 | Feature | Description |
-| --- | --- |
-| **AI bio generation** | Generates a bio with Groq (Llama 3.3) from your details — or 3 variants to compare |
-| **Card Studio** | Live preview card with 4 themes: Notion, Glass, Paper, Neon |
-| **Typography** | 5 font styles synced across output and preview |
-| **Symbol palette** | Click any aesthetic symbol to insert it at your cursor |
-| **Platform presets** | One-click setup for Instagram, X, TikTok, Discord, GitHub, LinkedIn |
-| **PNG export** | Download your card as a PNG via html2canvas |
-| **Export sizes** | Card (2.5×), Instagram post 1:1 (1080), Story 9:16 (1080×1920), Banner 3:1 (1500×500) |
-| **Extra link slots** | Up to 4 additional custom links (TikTok, YouTube, LinkedIn, portfolio…) |
-| **Share setup** | Copy a link that restores your exact form when opened |
-| **History** | Last 5 generated bios auto-saved locally |
-| **Saved projects** | Name and restore full form configurations |
-| **Theme** | Dark/light mode, remembered between visits |
+| :--- | :--- |
+| **AI Bio Generation** | Powered by Groq (Llama 3.3 70B) to generate polished, platform-native bios. |
+| **Card Studio** | Live preview with 4 aesthetic themes: Notion, Glass, Paper, and Neon. |
+| **Custom Links** | Add up to 4 additional link pills (TikTok, YouTube, LinkedIn, Portfolio, etc.). |
+| **Export Presets** | One-click export for Instagram (1:1), Stories (9:16), and Banners (3:1). |
+| **Shareable Setup** | Encode your entire configuration into a URL hash for zero-backend sharing. |
+| **Typography** | 5 hand-picked font styles synced across output and preview. |
+| **Symbol Palette** | Quick-access aesthetic symbols (✦, ⋆, ☾, etc.) to spice up your bio. |
+| **Privacy First** | API keys and data stay in your browser. No backend, no tracking. |
 
-## Usage
+## 🚀 Usage
 
-1. Open `index.html` in any modern browser (or serve it with any static file server).
-2. Paste your [Groq API key](https://console.groq.com) into the API Setup step. It is saved in your browser only.
-3. Fill in your profile details (name, handle, platform, tone, aesthetic, links).
-4. Hit **Generate Bio** (or **Generate 3 Variants** to compare) and pick the one you like.
-5. Switch card themes and fonts until it looks right, then **Copy Bio** or **Download PNG**.
+1. **Launch:** Open `index.html` in any modern browser.
+2. **API Setup:** Paste your [Groq API key](https://console.groq.com) in the API Setup section.
+3. **Configure:** Fill in your name, handle, platform, and links. Add custom links if needed.
+4. **Generate:** Hit **Generate Bio** or **Generate 3 Variants** to compare styles.
+5. **Style:** Choose a card theme and font in the **Card Studio** and **Typography** sections.
+6. **Export:** Click **Download PNG** or **Copy Bio** to share your new identity.
 
-## Development
+## 🛠️ Technical Architecture
+
+Aesthetic Bio Maker is built as a **zero-build static application** for maximum portability and speed.
+
+- **Frontend:** Vanilla HTML5, CSS3 (Custom Properties), and JavaScript (ES6+).
+- **AI Integration:** Direct browser-to-API calls to Groq's Llama-3.3-70b-versatile model.
+- **Rendering:** [html2canvas](https://html2canvas.hertzen.com/) for high-quality DOM-to-PNG export.
+- **Persistence:** `localStorage` for API keys, history, and project management.
+- **State Management:** URL-based encoding (Base64) for stateless sharing.
+
+## 📦 Development
+
+The project uses ESLint to maintain code quality.
 
 ```bash
-npm install   # installs ESLint (dev only — the app itself has no build step)
-npm run lint  # lints app.js
+# Install development dependencies
+npm install
+
+# Run linting
+npm run lint
 ```
 
-The app is three static files (`index.html`, `style.css`, `app.js`) plus a CDN dependency (html2canvas). No framework, no bundler.
+## 📄 License
 
-## Notes
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-- The API key is persisted in `localStorage` so you don't have to re-paste it on every visit.
-- Link fields accept well-formed `http://` / `https://` URLs only; invalid URLs are silently omitted from the card rather than rendered as broken pills.
+## 🤝 Contributing
 
-## License
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to get started.
 
-ISC — see [LICENSE](LICENSE).
+---
+*Built with intent by [vincenzo-afk](https://github.com/vincenzo-afk)*
