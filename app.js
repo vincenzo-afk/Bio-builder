@@ -85,6 +85,22 @@ const R = {
   bannerSizeLabel:       $("bannerSizeLabel"),
   downloadBannerBtn:     $("downloadBannerBtn"),
   resetBannerBtn:        $("resetBannerBtn"),
+  undoBtn:               $("undoBtn"),
+  redoBtn:               $("redoBtn"),
+  networkStatus:         $("networkStatus"),
+  qualityChecks:         $("qualityChecks"),
+  templateGrid:          $("templateGrid"),
+  brandAccent:           $("brandAccent"),
+  brandSecondary:        $("brandSecondary"),
+  brandTagline:          $("brandTagline"),
+  brandCta:              $("brandCta"),
+  applyBrandKitBtn:      $("applyBrandKitBtn"),
+  exportFilename:        $("exportFilename"),
+  exportScale:           $("exportScale"),
+  exportTransparent:     $("exportTransparent"),
+  exportProjectBtn:      $("exportProjectBtn"),
+  importProjectBtn:      $("importProjectBtn"),
+  importProjectFile:     $("importProjectFile"),
 };
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────────────
@@ -127,6 +143,14 @@ const BANNER_PRESETS = {
   portfolio: { w: 1600, h: 600, label: "1600 × 600 px", bg: "paper" },
 };
 const BANNER_BACKGROUNDS = ["midnight", "aurora", "paper", "sunset", "plain"];
+const PROJECT_SCHEMA_VERSION = 2;
+const MAX_UNDO_STEPS = 40;
+const TEMPLATES = [
+  { id: "midnight-builder", name: "Midnight Builder", description: "Dark, focused, and technical.", card: "neon", font: "mono", background: "midnight", accent: "#a99bff" },
+  { id: "quiet-editorial", name: "Quiet Editorial", description: "Warm paper with a refined voice.", card: "paper", font: "editorial", background: "paper", accent: "#b56a45" },
+  { id: "aurora-creator", name: "Aurora Creator", description: "Soft glow for creative profiles.", card: "glass", font: "space", background: "aurora", accent: "#65e6cc" },
+  { id: "clean-founder", name: "Clean Founder", description: "Crisp, direct, and professional.", card: "notion", font: "clean", background: "plain", accent: "#4f7cff" },
+];
 
 // Custom (extra) link slots beyond the fixed four. Each slot has a label + URL.
 const MAX_CUSTOM_LINKS = 4;
@@ -218,6 +242,12 @@ const state = {
     subtitle: "AI builder · designer · open source", accent: "#a99bff", align: "left",
     showAvatar: true, showHandle: true,
   },
+  brandKit: { accent: "#a99bff", secondary: "#65e6cc", tagline: "", cta: "" },
+  exportSettings: { filename: "", scale: "2", transparent: true },
+  undoStack: [],
+  redoStack: [],
+  historyTimer: null,
+  historyMute: false,
 };
 
 // ─── BOOT ────────────────────────────────────────────────────────────────────
@@ -236,7 +266,12 @@ document.addEventListener("DOMContentLoaded", () => {
   renderProjects();
   updatePreview();
   bindBanner();
+  bindBrandKit();
   renderBanner();
+  renderTemplates();
+  renderQualityChecks();
+  bindNetworkStatus();
+  resetUndoHistory();
   setStatus("Ready.");
   if (state.sidebarCollapsed) collapseSidebar(true);
 });
@@ -250,6 +285,8 @@ function loadPrefs() {
   const h = lsJSON(LS.history, []);
   const p = lsJSON(LS.projects, []);
   const s = ls(LS.sidebar);
+  const exportSettings = lsJSON("abm2_export_settings", null);
+  if (exportSettings && typeof exportSettings === "object") state.exportSettings = { ...state.exportSettings, ...exportSettings };
 
   if (t === "light" || t === "dark") state.theme = t;
   if (FONTS.includes(f)) state.font = f;
@@ -264,6 +301,7 @@ function loadPrefs() {
   const savedKey = ls(LS.apiKey);
   if (savedKey) { R.apiKey.value = savedKey; }
   R.apiKey.addEventListener("input", () => lsSet(LS.apiKey, R.apiKey.value.trim()));
+  bindExportSettings();
 }
 
 // ─── BIND ────────────────────────────────────────────────────────────────────
@@ -303,6 +341,18 @@ function bindAll() {
     .forEach((field) => field.addEventListener("change", syncBannerFromControls));
   R.downloadBannerBtn.addEventListener("click", downloadBanner);
   R.resetBannerBtn.addEventListener("click", resetBanner);
+  R.undoBtn.addEventListener("click", undo);
+  R.redoBtn.addEventListener("click", redo);
+  R.exportProjectBtn.addEventListener("click", exportProjectBackup);
+  R.importProjectBtn.addEventListener("click", () => R.importProjectFile.click());
+  R.importProjectFile.addEventListener("change", importProjectBackup);
+  R.applyBrandKitBtn.addEventListener("click", applyBrandKit);
+  [R.brandAccent, R.brandSecondary, R.brandTagline, R.brandCta].forEach((field) => field.addEventListener("input", saveBrandKit));
+  [R.exportFilename, R.exportScale, R.exportTransparent].forEach((field) => field.addEventListener("input", saveExportSettings));
+  [R.exportScale, R.exportTransparent].forEach((field) => field.addEventListener("change", saveExportSettings));
+  document.addEventListener("keydown", handleUndoShortcut);
+  window.addEventListener("online", updateNetworkStatus);
+  window.addEventListener("offline", updateNetworkStatus);
 
   // Font chips
   R.fontStyles.addEventListener("click", (e) => {
@@ -326,8 +376,8 @@ function bindAll() {
     R.websiteUrl, R.githubUrl, R.twitterUrl, R.instagramUrl, R.bioOutput,
     R.bannerHeadline, R.bannerSubtitle
   ].forEach((f) => {
-    f.addEventListener("input", updatePreview);
-    f.addEventListener("change", updatePreview);
+    f.addEventListener("input", () => { updatePreview(); queueUndoSnapshot(); });
+    f.addEventListener("change", () => { updatePreview(); queueUndoSnapshot(); });
   });
 
   // Track active field for symbol insertion
@@ -363,8 +413,16 @@ function bindAll() {
     const btn = e.target.closest("[data-paction]");
     if (!btn) return;
     const idx = Number(btn.dataset.idx);
-    if (btn.dataset.paction === "load")   loadProject(idx);
-    if (btn.dataset.paction === "delete") deleteProject(idx);
+    if (btn.dataset.paction === "load")    loadProject(idx);
+    if (btn.dataset.paction === "delete")  deleteProject(idx);
+    if (btn.dataset.paction === "duplicate") duplicateProject(idx);
+    if (btn.dataset.paction === "rename")   renameProject(idx);
+    if (btn.dataset.paction === "favorite") toggleFavoriteProject(idx);
+  });
+
+  R.templateGrid.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-template]");
+    if (btn) applyTemplate(btn.dataset.template);
   });
 
   // Variant delegation
@@ -690,6 +748,7 @@ function updatePreview() {
   renderLinkPills();
   renderBanner();
   updateCharCount();
+  renderQualityChecks();
 }
 
 function fallbackBio() {
@@ -782,7 +841,8 @@ async function downloadCard() {
     // Render the preview card natively (2.5×), then contain-fit it onto the
     // selected target canvas. Pure canvas math — no DOM staging quirks — so
     // the card is never cropped or stretched, whatever the target aspect.
-    const base = await html2canvas(R.captureCard, { backgroundColor: null, scale: 2.5, useCORS: true, logging: false });
+    const scaleFactor = Number(state.exportSettings.scale) || 2;
+    const base = await html2canvas(R.captureCard, { backgroundColor: state.exportSettings.transparent ? null : "#ffffff", scale: scaleFactor, useCORS: true, logging: false });
 
     if (!target.w) {
       canvas = base;
@@ -796,12 +856,13 @@ async function downloadCard() {
       canvas.width = target.w;
       canvas.height = target.h;
       const ctx = canvas.getContext("2d");
+      if (!state.exportSettings.transparent) { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, target.w, target.h); }
       ctx.drawImage(base, Math.round((target.w - dw) / 2), Math.round((target.h - dh) / 2), dw, dh);
     }
 
     const link = document.createElement("a");
     link.href = canvas.toDataURL("image/png");
-    link.download = `${slugify(R.displayName.value.trim() || "aesthetic-bio")}-card${target.suffix}.png`;
+    link.download = `${slugify(state.exportSettings.filename || R.displayName.value.trim() || "aesthetic-bio")}-card${target.suffix}.png`;
     link.click();
     setStatus("PNG downloaded.", "ok");
   } catch (err) {
@@ -812,9 +873,11 @@ async function downloadCard() {
 
 // ─── BIO BANNER BUILDER ───────────────────────────────────────────────────────
 
-function bindBanner() {
-  const saved = lsJSON("abm2_banner", null);
-  if (saved && typeof saved === "object") state.banner = { ...state.banner, ...saved };
+function bindBanner(loadSaved = true) {
+  if (loadSaved) {
+    const saved = lsJSON("abm2_banner", null);
+    if (saved && typeof saved === "object") state.banner = { ...state.banner, ...saved };
+  }
   R.bannerPreset.value = state.banner.preset;
   R.bannerBackground.value = state.banner.background;
   R.bannerHeadline.value = state.banner.headline;
@@ -872,7 +935,7 @@ function resetBanner() {
     preset: "github", background: "midnight", headline: "Building the future, one idea at a time.",
     subtitle: "AI builder · designer · open source", accent: "#a99bff", align: "left", showAvatar: true, showHandle: true,
   };
-  bindBanner();
+  bindBanner(false);
   syncBannerFromControls();
   setStatus("Banner reset.");
 }
@@ -881,15 +944,17 @@ async function downloadBanner() {
   try {
     const preset = BANNER_PRESETS[state.banner.preset] || BANNER_PRESETS.github;
     setStatus("Rendering banner...");
-    const base = await html2canvas(R.captureBanner, { backgroundColor: null, scale: 2, useCORS: true, logging: false });
+    const scaleFactor = Number(state.exportSettings.scale) || 2;
+    const base = await html2canvas(R.captureBanner, { backgroundColor: state.exportSettings.transparent ? null : "#ffffff", scale: scaleFactor, useCORS: true, logging: false });
     const canvas = document.createElement("canvas");
     canvas.width = preset.w;
     canvas.height = preset.h;
     const ctx = canvas.getContext("2d");
+    if (!state.exportSettings.transparent) { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, preset.w, preset.h); }
     ctx.drawImage(base, 0, 0, preset.w, preset.h);
     const link = document.createElement("a");
     link.href = canvas.toDataURL("image/png");
-    link.download = `${slugify(R.displayName.value.trim() || "bio-builder")}-${state.banner.preset}-banner.png`;
+    link.download = `${slugify(state.exportSettings.filename || R.displayName.value.trim() || "bio-builder")}-${state.banner.preset}-banner.png`;
     link.click();
     setStatus("Banner downloaded.", "ok");
   } catch (err) {
@@ -1023,6 +1088,9 @@ function gatherForm() {
     font:         state.font,
     avatarData:   state.avatarData,
     banner:       state.banner,
+    brandKit:     state.brandKit,
+    exportSettings: state.exportSettings,
+    schemaVersion: PROJECT_SCHEMA_VERSION,
   };
 }
 
@@ -1048,10 +1116,19 @@ function applyForm(data) {
   if (data.font) setFont(data.font);
   if (data.banner && typeof data.banner === "object") {
     state.banner = { ...state.banner, ...data.banner };
-    bindBanner();
+    bindBanner(false);
+  }
+  if (data.brandKit && typeof data.brandKit === "object") {
+    state.brandKit = { ...state.brandKit, ...data.brandKit };
+    bindBrandKit();
+  }
+  if (data.exportSettings && typeof data.exportSettings === "object") {
+    state.exportSettings = { ...state.exportSettings, ...data.exportSettings };
+    bindExportSettings();
   }
   updatePreview();
   renderBanner();
+  renderQualityChecks();
 }
 
 function promptSaveProject() {
@@ -1067,6 +1144,7 @@ function saveProject() {
   const project = {
     name,
     date: new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }),
+    favorite: false,
     data: gatherForm(),
   };
 
@@ -1106,12 +1184,240 @@ function renderProjects() {
           <div class="project-date">${esc(p.date)}</div>
         </div>
         <div class="project-item-actions">
-          <button class="ghost-btn small" data-paction="load"   data-idx="${i}">Load</button>
+          <button class="ghost-btn small" data-paction="load" data-idx="${i}">Load</button>
+          <button class="ghost-btn small" data-paction="duplicate" data-idx="${i}">Duplicate</button>
+          <button class="ghost-btn small" data-paction="rename" data-idx="${i}">Rename</button>
+          <button class="ghost-btn small" data-paction="favorite" data-idx="${i}" aria-label="${p.favorite ? "Unfavorite" : "Favorite"} project">${p.favorite ? "★" : "☆"}</button>
           <button class="ghost-btn small" data-paction="delete" data-idx="${i}">Delete</button>
         </div>
       </li>
     `)
     .join("");
+}
+
+// ─── PROJECT BACKUPS, HISTORY, TEMPLATES, BRAND KIT, QUALITY ─────────────────
+
+function captureEditorState() {
+  return JSON.parse(JSON.stringify(gatherForm()));
+}
+
+function resetUndoHistory() {
+  state.undoStack = [captureEditorState()];
+  state.redoStack = [];
+  updateUndoButtons();
+}
+
+function queueUndoSnapshot() {
+  if (state.historyMute) return;
+  clearTimeout(state.historyTimer);
+  state.historyTimer = setTimeout(() => {
+    const current = captureEditorState();
+    const previous = state.undoStack[state.undoStack.length - 1];
+    if (JSON.stringify(current) === JSON.stringify(previous)) return;
+    state.undoStack.push(current);
+    if (state.undoStack.length > MAX_UNDO_STEPS) state.undoStack.shift();
+    state.redoStack = [];
+    updateUndoButtons();
+  }, 250);
+}
+
+function undo() {
+  if (state.undoStack.length < 2) return;
+  const current = state.undoStack.pop();
+  state.redoStack.push(current);
+  state.historyMute = true;
+  applyForm(state.undoStack[state.undoStack.length - 1]);
+  state.historyMute = false;
+  updateUndoButtons();
+  setStatus("Undid last change.", "ok");
+}
+
+function redo() {
+  if (!state.redoStack.length) return;
+  const next = state.redoStack.pop();
+  state.undoStack.push(next);
+  state.historyMute = true;
+  applyForm(next);
+  state.historyMute = false;
+  updateUndoButtons();
+  setStatus("Redid change.", "ok");
+}
+
+function updateUndoButtons() {
+  if (!R.undoBtn || !R.redoBtn) return;
+  R.undoBtn.disabled = state.undoStack.length < 2;
+  R.redoBtn.disabled = !state.redoStack.length;
+}
+
+function handleUndoShortcut(e) {
+  if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "z") return;
+  e.preventDefault();
+  if (e.shiftKey) redo(); else undo();
+}
+
+function bindNetworkStatus() { updateNetworkStatus(); }
+function updateNetworkStatus() {
+  if (!R.networkStatus) return;
+  const online = navigator.onLine;
+  R.networkStatus.textContent = online ? "Online" : "Offline editing";
+  R.networkStatus.classList.toggle("offline", !online);
+}
+
+function bindBrandKit() {
+  const saved = lsJSON("abm2_brand_kit", null);
+  if (saved && typeof saved === "object") state.brandKit = { ...state.brandKit, ...saved };
+  R.brandAccent.value = state.brandKit.accent;
+  R.brandSecondary.value = state.brandKit.secondary;
+  R.brandTagline.value = state.brandKit.tagline;
+  R.brandCta.value = state.brandKit.cta;
+}
+
+function saveBrandKit() {
+  state.brandKit = { accent: R.brandAccent.value, secondary: R.brandSecondary.value, tagline: R.brandTagline.value.trim(), cta: R.brandCta.value.trim() };
+  lsSet("abm2_brand_kit", JSON.stringify(state.brandKit));
+  queueUndoSnapshot();
+}
+
+function applyBrandKit() {
+  saveBrandKit();
+  state.banner.accent = state.brandKit.accent;
+  if (state.brandKit.tagline) state.banner.subtitle = state.brandKit.tagline;
+  if (state.brandKit.cta) R.cta.value = state.brandKit.cta;
+  bindBanner(false);
+  updatePreview();
+  queueUndoSnapshot();
+  setStatus("Brand kit applied.", "ok");
+}
+
+function bindExportSettings() {
+  R.exportFilename.value = state.exportSettings.filename || "";
+  R.exportScale.value = state.exportSettings.scale || "2";
+  R.exportTransparent.checked = state.exportSettings.transparent !== false;
+}
+
+function saveExportSettings() {
+  state.exportSettings = { filename: R.exportFilename.value.trim(), scale: R.exportScale.value, transparent: R.exportTransparent.checked };
+  lsSet("abm2_export_settings", JSON.stringify(state.exportSettings));
+}
+
+function renderTemplates() {
+  R.templateGrid.innerHTML = TEMPLATES.map((t) => `
+    <button class="template-card" type="button" data-template="${t.id}">
+      <span class="template-swatch template-${t.background}" style="--template-accent:${t.accent}"></span>
+      <span class="template-name">${esc(t.name)}</span>
+      <span class="template-description">${esc(t.description)}</span>
+      <span class="template-meta">${esc(t.card)} · ${esc(t.font)}</span>
+    </button>`).join("");
+}
+
+function applyTemplate(id) {
+  const template = TEMPLATES.find((item) => item.id === id);
+  if (!template) return;
+  setCardTheme(template.card);
+  setFont(template.font);
+  state.banner.background = template.background;
+  state.banner.accent = template.accent;
+  bindBanner(false);
+  updatePreview();
+  queueUndoSnapshot();
+  setStatus(`${template.name} template applied.`, "ok");
+}
+
+function renderQualityChecks() {
+  if (!R.qualityChecks) return;
+  const checks = [];
+  const bio = R.bioOutput.value.trim();
+  const limit = charLimit(R.platform.value);
+  if (!bio) checks.push({ type: "info", text: "Generate or write a bio to run quality checks." });
+  else if (bio.length > limit) checks.push({ type: "error", text: `Bio is ${bio.length - limit} characters over the ${limit}-character ${R.platform.value} limit.` });
+  else checks.push({ type: "ok", text: `Bio fits the ${R.platform.value} limit (${bio.length}/${limit}).` });
+  if (!R.displayName.value.trim()) checks.push({ type: "warn", text: "Add a display name so cards and banners feel complete." });
+  if (R.handle.value.trim() && !/^@?[a-zA-Z0-9._-]{2,40}$/.test(R.handle.value.trim())) checks.push({ type: "warn", text: "Handle contains unusual characters; check the platform format." });
+  const urls = [R.websiteUrl.value, R.githubUrl.value, R.twitterUrl.value, R.instagramUrl.value, ...gatherCustomLinks().map((l) => l.url)];
+  if (urls.some((url) => url && !safeUrl(url))) checks.push({ type: "error", text: "One or more links need a valid http:// or https:// URL." });
+  if (/\b(gsk_|sk-[A-Za-z0-9])/i.test(`${R.bioOutput.value} ${R.about.value}`)) checks.push({ type: "error", text: "Possible API-key text detected. Remove secrets before sharing or exporting." });
+  R.qualityChecks.innerHTML = checks.map((c) => `<div class="quality-item quality-${c.type}"><span aria-hidden="true">${c.type === "ok" ? "✓" : c.type === "error" ? "!" : c.type === "warn" ? "△" : "i"}</span><span>${esc(c.text)}</span></div>`).join("");
+}
+
+function projectPayload() {
+  return { schemaVersion: PROJECT_SCHEMA_VERSION, exportedAt: new Date().toISOString(), data: captureEditorState() };
+}
+
+function exportProjectBackup() {
+  const blob = new Blob([JSON.stringify(projectPayload(), null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${slugify(R.displayName.value.trim() || "bio-builder")}-project.json`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+  setStatus("Project backup exported.", "ok");
+}
+
+function normalizeImportedProject(payload) {
+  const source = payload?.data && typeof payload.data === "object" ? payload.data : payload;
+  if (!source || typeof source !== "object") throw new Error("Invalid project format.");
+  if (payload.schemaVersion && Number(payload.schemaVersion) > PROJECT_SCHEMA_VERSION) throw new Error("This backup was created by a newer version.");
+  const allowed = captureEditorState();
+  const clean = { ...allowed };
+  Object.keys(allowed).forEach((key) => { if (Object.prototype.hasOwnProperty.call(source, key)) clean[key] = source[key]; });
+  clean.displayName = String(clean.displayName || "").slice(0, 100);
+  clean.handle = String(clean.handle || "").slice(0, 80);
+  clean.bioOutput = String(clean.bioOutput || "").slice(0, 2000);
+  clean.customLinks = Array.isArray(clean.customLinks) ? clean.customLinks.slice(0, MAX_CUSTOM_LINKS) : [];
+  return clean;
+}
+
+function importProjectBackup(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (file.size > 2_000_000) { setStatus("Backup is too large to import.", "error"); e.target.value = ""; return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const payload = JSON.parse(reader.result);
+      const data = normalizeImportedProject(payload);
+      state.historyMute = true;
+      applyForm(data);
+      state.historyMute = false;
+      resetUndoHistory();
+      setStatus("Project backup imported.", "ok");
+    } catch (err) {
+      setStatus(err.message || "Backup could not be imported.", "error");
+    }
+    e.target.value = "";
+  };
+  reader.readAsText(file);
+}
+
+function duplicateProject(idx) {
+  const project = state.projects[idx];
+  if (!project) return;
+  const copy = { ...project, name: `${project.name} copy`, date: new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }), favorite: false, data: JSON.parse(JSON.stringify(project.data)) };
+  state.projects = [copy, ...state.projects].slice(0, 20);
+  lsSet(LS.projects, JSON.stringify(state.projects));
+  renderProjects();
+  setStatus("Project duplicated.", "ok");
+}
+
+function renameProject(idx) {
+  const project = state.projects[idx];
+  if (!project) return;
+  const name = window.prompt("Rename project", project.name)?.trim();
+  if (!name) return;
+  project.name = name.slice(0, 80);
+  lsSet(LS.projects, JSON.stringify(state.projects));
+  renderProjects();
+  setStatus("Project renamed.", "ok");
+}
+
+function toggleFavoriteProject(idx) {
+  const project = state.projects[idx];
+  if (!project) return;
+  project.favorite = !project.favorite;
+  state.projects = [project, ...state.projects.filter((_, i) => i !== idx)].sort((a, b) => Number(b.favorite) - Number(a.favorite));
+  lsSet(LS.projects, JSON.stringify(state.projects));
+  renderProjects();
 }
 
 // ─── STATUS ──────────────────────────────────────────────────────────────────

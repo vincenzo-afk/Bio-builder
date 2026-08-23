@@ -11,6 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Playfair+Display:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#0f0f0f" />
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body data-theme="dark">
@@ -51,6 +53,12 @@
         </a></li>
         <li><a href="#" class="sidebar-link" data-section="presets">
           <span class="nav-icon">🎯</span><span class="nav-label">Platform Presets</span>
+        </a></li>
+        <li><a href="#" class="sidebar-link" data-section="templates">
+          <span class="nav-icon">▦</span><span class="nav-label">Templates</span>
+        </a></li>
+        <li><a href="#" class="sidebar-link" data-section="brand">
+          <span class="nav-icon">🎨</span><span class="nav-label">Brand Kit</span>
         </a></li>
         <li><a href="#" class="sidebar-link" data-section="projects">
           <span class="nav-icon">📁</span><span class="nav-label">Saved Projects</span>
@@ -98,6 +106,9 @@
           <span class="topbar-brand">✦ Aesthetic Bio Maker</span>
         </div>
         <div class="topbar-right">
+          <span class="network-status" id="networkStatus" role="status">Online</span>
+          <button class="icon-btn" id="undoBtn" title="Undo (Ctrl/Cmd+Z)" aria-label="Undo" disabled>↶</button>
+          <button class="icon-btn" id="redoBtn" title="Redo (Ctrl/Cmd+Shift+Z)" aria-label="Redo" disabled>↷</button>
           <button class="ghost-btn" id="saveProjectBtn">💾 Save Project</button>
           <button class="ghost-btn" id="copyBtn">Copy Bio</button>
           <button class="primary-btn" id="downloadBtn">Download PNG</button>
@@ -286,10 +297,11 @@
               </div>
               <div class="panel-actions">
                 <span id="charCount" class="meta-label">0 chars</span>
-                <span id="statusText" class="meta-label">Ready.</span>
+                <span id="statusText" class="meta-label" role="status" aria-live="polite">Ready.</span>
               </div>
             </div>
             <textarea id="bioOutput" rows="5" placeholder="Your generated bio appears here..."></textarea>
+            <div id="qualityChecks" class="quality-checks" aria-live="polite"></div>
           </section>
 
           <!-- BIO VARIANTS -->
@@ -348,6 +360,30 @@
             <div id="presetGrid" class="preset-grid"></div>
           </section>
 
+          <!-- TEMPLATES -->
+          <section class="panel" id="section-templates" data-block="templates">
+            <div class="panel-head">
+              <div><p class="kicker">Start faster</p><h2>Template Gallery</h2></div>
+            </div>
+            <p class="helper">Apply a coordinated card, banner, font, and accent direction. Applying a template is undoable.</p>
+            <div id="templateGrid" class="template-grid"></div>
+          </section>
+
+          <!-- BRAND KIT -->
+          <section class="panel" id="section-brand" data-block="brand">
+            <div class="panel-head">
+              <div><p class="kicker">Reusable identity</p><h2>Brand Kit</h2></div>
+              <button class="ghost-btn small" id="applyBrandKitBtn" type="button">Apply to designs</button>
+            </div>
+            <div class="form-grid compact-grid">
+              <div class="field"><label for="brandAccent">Primary accent</label><input id="brandAccent" class="color-input" type="color" value="#a99bff" /></div>
+              <div class="field"><label for="brandSecondary">Secondary color</label><input id="brandSecondary" class="color-input" type="color" value="#65e6cc" /></div>
+              <div class="field span-2"><label for="brandTagline">Default tagline</label><input id="brandTagline" maxlength="100" placeholder="Building useful things with personality." /></div>
+              <div class="field span-2"><label for="brandCta">Default CTA</label><input id="brandCta" maxlength="80" placeholder="Open to thoughtful collaborations." /></div>
+            </div>
+            <p class="helper">Your brand kit stays on this device and can be applied to new cards or banners without retyping the same identity.</p>
+          </section>
+
           <!-- HISTORY -->
           <section class="panel" id="section-history" data-block="history">
             <div class="panel-head">
@@ -370,8 +406,13 @@
             </div>
             <p class="helper">Save your current form as a named project and restore it later.</p>
             <div class="project-save-row">
-              <input id="projectName" type="text" placeholder="Project name..." />
+              <input id="projectName" type="text" placeholder="Project name..." aria-label="Project name" />
               <button class="primary-btn" id="saveProjectConfirmBtn">Save</button>
+            </div>
+            <div class="backup-actions">
+              <button class="ghost-btn small" id="exportProjectBtn" type="button">⬇ Export backup</button>
+              <button class="ghost-btn small" id="importProjectBtn" type="button">⬆ Import backup</button>
+              <input id="importProjectFile" type="file" accept="application/json,.json" hidden />
             </div>
             <ul id="projectsList" class="projects-list"></ul>
           </section>
@@ -438,12 +479,17 @@
             <div class="card-actions">
               <button class="ghost-btn full-w" id="copyBtnCard">📋 Copy Bio</button>
               <div class="export-row">
-                <select id="exportSize" title="Export size preset">
+                <select id="exportSize" title="Export size preset" aria-label="Export size preset">
                   <option value="card">Card (2.5×)</option>
                   <option value="square-1080">Instagram post 1:1</option>
                   <option value="story-1080x1920">Story 9:16</option>
                   <option value="banner-1500x500">Banner 3:1</option>
                 </select>
+                <div class="export-options">
+                  <input id="exportFilename" type="text" maxlength="54" placeholder="File name" aria-label="Export filename" />
+                  <select id="exportScale" aria-label="Export scale"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option></select>
+                </div>
+                <label class="export-check"><input id="exportTransparent" type="checkbox" checked /> Transparent background</label>
                 <button class="primary-btn full-w" id="downloadBtnCard">⬇ Download PNG</button>
               </div>
             </div>
@@ -545,5 +591,8 @@
   </div>
 
   <script src="app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+  </script>
 </body>
 </html>

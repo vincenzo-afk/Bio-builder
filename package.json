@@ -1,10 +1,11 @@
 {
   "name": "bio-builder",
   "version": "1.0.0",
-  "description": "A minimal, Notion-style bio maker — generate aesthetic bios with Groq AI, style a profile card, and export it as a PNG.",
+  "description": "A minimal, Notion-style bio maker \u2014 generate aesthetic bios with Groq AI, style a profile card, and export it as a PNG.",
   "main": "app.js",
   "scripts": {
-    "lint": "eslint app.js"
+    "lint": "eslint app.js",
+    "check": "node scripts/check.mjs"
   },
   "repository": {
     "type": "git",

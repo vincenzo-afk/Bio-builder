@@ -1,0 +1,10 @@
+{
+  "name": "Aesthetic Bio Maker",
+  "short_name": "Bio Maker",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "description": "Create AI bios, profile cards, and social banners locally in your browser.",
+  "icons": [{ "src": "./icon.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
