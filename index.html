@@ -517,10 +517,15 @@
                     <option value="x">X / Twitter header · 1500 × 500</option>
                     <option value="youtube">YouTube channel art · 2560 × 1440</option>
                     <option value="portfolio">Portfolio hero · 1600 × 600</option>
+                    <option value="custom">Custom canvas</option>
                   </select>
                 </div>
+                <div class="form-grid compact-grid banner-custom-size">
+                  <div class="field"><label for="bannerWidth">Width (px)</label><input id="bannerWidth" type="number" min="640" max="6000" step="1" value="1280" /></div>
+                  <div class="field"><label for="bannerHeight">Height (px)</label><input id="bannerHeight" type="number" min="320" max="6000" step="1" value="640" /></div>
+                </div>
                 <div class="field">
-                  <label for="bannerBackground">Background</label>
+                  <label for="bannerBackground">Background style</label>
                   <select id="bannerBackground">
                     <option value="midnight">Midnight gradient</option>
                     <option value="aurora">Aurora glow</option>
@@ -529,14 +534,27 @@
                     <option value="plain">Accent solid</option>
                   </select>
                 </div>
+                <div class="banner-upload-row">
+                  <label class="upload-button" for="bannerImageUpload">＋ Add background image</label>
+                  <input id="bannerImageUpload" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+                  <button class="ghost-btn small" id="clearBannerImageBtn" type="button">Remove image</button>
+                </div>
                 <div class="form-grid compact-grid">
-                  <div class="field">
-                    <label for="bannerHeadline">Headline</label>
-                    <input id="bannerHeadline" type="text" maxlength="70" placeholder="Building the future, one idea at a time." />
+                  <div class="field span-2">
+                    <label for="bannerEyebrow">Eyebrow / label</label>
+                    <input id="bannerEyebrow" type="text" maxlength="36" placeholder="AI BUILDER · OPEN SOURCE" />
                   </div>
-                  <div class="field">
+                  <div class="field span-2">
+                    <label for="bannerHeadline">Headline</label>
+                    <input id="bannerHeadline" type="text" maxlength="90" placeholder="Building the future, one idea at a time." />
+                  </div>
+                  <div class="field span-2">
                     <label for="bannerSubtitle">Supporting line</label>
-                    <input id="bannerSubtitle" type="text" maxlength="100" placeholder="AI builder · designer · open source" />
+                    <input id="bannerSubtitle" type="text" maxlength="120" placeholder="AI builder · designer · open source" />
+                  </div>
+                  <div class="field span-2">
+                    <label for="bannerCta">Call to action</label>
+                    <input id="bannerCta" type="text" maxlength="70" placeholder="Open to thoughtful collaborations →" />
                   </div>
                 </div>
                 <div class="form-grid compact-grid">
@@ -552,10 +570,24 @@
                       <option value="right">Right</option>
                     </select>
                   </div>
+                  <div class="field">
+                    <label for="bannerPosition">Image position</label>
+                    <select id="bannerPosition"><option value="center">Center</option><option value="left">Left</option><option value="right">Right</option><option value="top">Top</option><option value="bottom">Bottom</option></select>
+                  </div>
+                  <div class="field range-field">
+                    <label for="bannerTextScale">Text scale <output id="bannerTextScaleValue">100%</output></label>
+                    <input id="bannerTextScale" type="range" min="75" max="140" step="1" value="100" />
+                  </div>
+                  <div class="field range-field">
+                    <label for="bannerOverlay">Image overlay <output id="bannerOverlayValue">35%</output></label>
+                    <input id="bannerOverlay" type="range" min="0" max="80" step="1" value="35" />
+                  </div>
                 </div>
                 <label class="banner-check"><input id="bannerShowAvatar" type="checkbox" checked /> <span>Show profile avatar</span></label>
                 <label class="banner-check"><input id="bannerShowHandle" type="checkbox" checked /> <span>Show handle and identity line</span></label>
+                <label class="banner-check"><input id="bannerShowSafeArea" type="checkbox" checked /> <span>Show safe-area guide</span></label>
                 <div class="toolbar banner-toolbar">
+                  <select id="bannerExportFormat" class="banner-format" aria-label="Banner export format"><option value="png">PNG</option><option value="jpeg">JPEG</option></select>
                   <button class="primary-btn" id="downloadBannerBtn" type="button">⬇ Download banner</button>
                   <button class="ghost-btn" id="resetBannerBtn" type="button">Reset design</button>
                 </div>
@@ -565,15 +597,19 @@
                 <div class="banner-size-label"><span id="bannerSizeLabel">1280 × 640 px</span><span id="bannerSafeLabel">Safe area on</span></div>
                 <div class="banner-stage">
                   <div id="captureBanner" class="bio-banner banner-bg-midnight banner-align-left">
+                    <div class="banner-image" aria-hidden="true"></div>
+                    <div class="banner-overlay" aria-hidden="true"></div>
                     <div class="banner-grid-lines"></div>
                     <div class="banner-glow"></div>
                     <div class="banner-content">
                       <img id="bannerAvatar" class="banner-avatar" alt="Profile avatar" />
                       <div class="banner-copy">
+                        <p id="bannerEyebrowPreview" class="banner-eyebrow">AI BUILDER · OPEN SOURCE</p>
                         <p id="bannerName" class="banner-name">Your Name</p>
                         <p id="bannerHeadlinePreview" class="banner-headline">Building the future, one idea at a time.</p>
                         <p id="bannerSubtitlePreview" class="banner-subtitle">AI builder · designer · open source</p>
                         <p id="bannerHandlePreview" class="banner-handle">@username</p>
+                        <p id="bannerCtaPreview" class="banner-cta">Open to thoughtful collaborations →</p>
                       </div>
                     </div>
                     <div class="banner-safe-area" aria-hidden="true"></div>
@@ -590,7 +626,7 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=7"></script>
   <script>
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
   </script>

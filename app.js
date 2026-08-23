@@ -69,20 +69,38 @@ const R = {
   badgeTone:            $("badgeTone"),
   badgeAesthetic:       $("badgeAesthetic"),
   bannerPreset:         $("bannerPreset"),
+  bannerWidth:          $("bannerWidth"),
+  bannerHeight:         $("bannerHeight"),
   bannerBackground:     $("bannerBackground"),
-  bannerHeadline:        $("bannerHeadline"),
-  bannerSubtitle:        $("bannerSubtitle"),
-  bannerAccent:          $("bannerAccent"),
-  bannerAlign:           $("bannerAlign"),
-  bannerShowAvatar:      $("bannerShowAvatar"),
-  bannerShowHandle:      $("bannerShowHandle"),
+  bannerImageUpload:    $("bannerImageUpload"),
+  clearBannerImageBtn:  $("clearBannerImageBtn"),
+  bannerEyebrow:        $("bannerEyebrow"),
+  bannerHeadline:       $("bannerHeadline"),
+  bannerSubtitle:       $("bannerSubtitle"),
+  bannerCta:            $("bannerCta"),
+  bannerAccent:         $("bannerAccent"),
+  bannerAlign:          $("bannerAlign"),
+  bannerPosition:       $("bannerPosition"),
+  bannerTextScale:      $("bannerTextScale"),
+  bannerTextScaleValue: $("bannerTextScaleValue"),
+  bannerOverlay:        $("bannerOverlay"),
+  bannerOverlayValue:   $("bannerOverlayValue"),
+  bannerShowAvatar:     $("bannerShowAvatar"),
+  bannerShowHandle:     $("bannerShowHandle"),
+  bannerShowSafeArea:   $("bannerShowSafeArea"),
+  bannerExportFormat:   $("bannerExportFormat"),
   captureBanner:         $("captureBanner"),
   bannerAvatar:          $("bannerAvatar"),
+  bannerImage:           $("captureBanner")?.querySelector(".banner-image"),
+  bannerOverlayLayer:    $("captureBanner")?.querySelector(".banner-overlay"),
   bannerName:            $("bannerName"),
+  bannerEyebrowPreview:  $("bannerEyebrowPreview"),
   bannerHeadlinePreview: $("bannerHeadlinePreview"),
   bannerSubtitlePreview: $("bannerSubtitlePreview"),
   bannerHandlePreview:   $("bannerHandlePreview"),
+  bannerCtaPreview:      $("bannerCtaPreview"),
   bannerSizeLabel:       $("bannerSizeLabel"),
+  bannerSafeLabel:       $("bannerSafeLabel"),
   downloadBannerBtn:     $("downloadBannerBtn"),
   resetBannerBtn:        $("resetBannerBtn"),
   undoBtn:               $("undoBtn"),
@@ -143,7 +161,7 @@ const BANNER_PRESETS = {
   portfolio: { w: 1600, h: 600, label: "1600 × 600 px", bg: "paper" },
 };
 const BANNER_BACKGROUNDS = ["midnight", "aurora", "paper", "sunset", "plain"];
-const PROJECT_SCHEMA_VERSION = 2;
+const PROJECT_SCHEMA_VERSION = 3;
 const MAX_UNDO_STEPS = 40;
 const TEMPLATES = [
   { id: "midnight-builder", name: "Midnight Builder", description: "Dark, focused, and technical.", card: "neon", font: "mono", background: "midnight", accent: "#a99bff" },
@@ -238,9 +256,10 @@ const state = {
   activeField: null,
   sidebarCollapsed: false,
   banner: {
-    preset: "github", background: "midnight", headline: "Building the future, one idea at a time.",
-    subtitle: "AI builder · designer · open source", accent: "#a99bff", align: "left",
-    showAvatar: true, showHandle: true,
+    preset: "github", customWidth: 1280, customHeight: 640, background: "midnight", imageData: "", imagePosition: "center",
+    eyebrow: "AI BUILDER · OPEN SOURCE", headline: "Building the future, one idea at a time.",
+    subtitle: "AI builder · designer · open source", cta: "Open to thoughtful collaborations →", accent: "#a99bff", align: "left",
+    textScale: 100, overlay: 35, showAvatar: true, showHandle: true, showSafeArea: true,
   },
   brandKit: { accent: "#a99bff", secondary: "#65e6cc", tagline: "", cta: "" },
   exportSettings: { filename: "", scale: "2", transparent: true },
@@ -335,10 +354,12 @@ function bindAll() {
   R.saveProjectConfirmBtn.addEventListener("click", saveProject);
 
   // Banner builder controls
-  [R.bannerPreset, R.bannerBackground, R.bannerHeadline, R.bannerSubtitle, R.bannerAccent, R.bannerAlign, R.bannerShowAvatar, R.bannerShowHandle]
+  [R.bannerPreset, R.bannerWidth, R.bannerHeight, R.bannerBackground, R.bannerEyebrow, R.bannerHeadline, R.bannerSubtitle, R.bannerCta, R.bannerAccent, R.bannerAlign, R.bannerPosition, R.bannerTextScale, R.bannerOverlay, R.bannerShowAvatar, R.bannerShowHandle, R.bannerShowSafeArea]
     .forEach((field) => field.addEventListener("input", syncBannerFromControls));
-  [R.bannerPreset, R.bannerBackground, R.bannerAlign, R.bannerShowAvatar, R.bannerShowHandle]
+  [R.bannerPreset, R.bannerBackground, R.bannerAlign, R.bannerPosition, R.bannerShowAvatar, R.bannerShowHandle, R.bannerShowSafeArea, R.bannerExportFormat]
     .forEach((field) => field.addEventListener("change", syncBannerFromControls));
+  R.bannerImageUpload.addEventListener("change", handleBannerImage);
+  R.clearBannerImageBtn.addEventListener("click", clearBannerImage);
   R.downloadBannerBtn.addEventListener("click", downloadBanner);
   R.resetBannerBtn.addEventListener("click", resetBanner);
   R.undoBtn.addEventListener("click", undo);
@@ -374,7 +395,7 @@ function bindAll() {
     R.platform, R.tone, R.aesthetic, R.displayName, R.handle,
     R.titleLine, R.keywords, R.about, R.cta, R.location,
     R.websiteUrl, R.githubUrl, R.twitterUrl, R.instagramUrl, R.bioOutput,
-    R.bannerHeadline, R.bannerSubtitle
+    R.bannerEyebrow, R.bannerHeadline, R.bannerSubtitle, R.bannerCta, R.bannerWidth, R.bannerHeight, R.bannerTextScale, R.bannerOverlay
   ].forEach((f) => {
     f.addEventListener("input", () => { updatePreview(); queueUndoSnapshot(); });
     f.addEventListener("change", () => { updatePreview(); queueUndoSnapshot(); });
@@ -873,76 +894,137 @@ async function downloadCard() {
 
 // ─── BIO BANNER BUILDER ───────────────────────────────────────────────────────
 
+function getBannerPreset() {
+  if (state.banner.preset === "custom") {
+    return {
+      w: clampInt(state.banner.customWidth, 640, 6000, 1280),
+      h: clampInt(state.banner.customHeight, 320, 6000, 640),
+      label: `${clampInt(state.banner.customWidth, 640, 6000, 1280)} × ${clampInt(state.banner.customHeight, 320, 6000, 640)} px`,
+      bg: state.banner.background || "midnight",
+    };
+  }
+  return BANNER_PRESETS[state.banner.preset] || BANNER_PRESETS.github;
+}
+
 function bindBanner(loadSaved = true) {
   if (loadSaved) {
     const saved = lsJSON("abm2_banner", null);
     if (saved && typeof saved === "object") state.banner = { ...state.banner, ...saved };
   }
-  R.bannerPreset.value = state.banner.preset;
-  R.bannerBackground.value = state.banner.background;
-  R.bannerHeadline.value = state.banner.headline;
-  R.bannerSubtitle.value = state.banner.subtitle;
-  R.bannerAccent.value = state.banner.accent;
-  R.bannerAlign.value = state.banner.align;
-  R.bannerShowAvatar.checked = state.banner.showAvatar;
-  R.bannerShowHandle.checked = state.banner.showHandle;
+  const b = state.banner;
+  R.bannerPreset.value = BANNER_PRESETS[b.preset] || b.preset === "custom" ? b.preset : "github";
+  R.bannerWidth.value = clampInt(b.customWidth, 640, 6000, 1280);
+  R.bannerHeight.value = clampInt(b.customHeight, 320, 6000, 640);
+  R.bannerBackground.value = BANNER_BACKGROUNDS.includes(b.background) ? b.background : "midnight";
+  R.bannerEyebrow.value = b.eyebrow || "";
+  R.bannerHeadline.value = b.headline || "";
+  R.bannerSubtitle.value = b.subtitle || "";
+  R.bannerCta.value = b.cta || "";
+  R.bannerAccent.value = b.accent || "#a99bff";
+  R.bannerAlign.value = b.align || "left";
+  R.bannerPosition.value = b.imagePosition || "center";
+  R.bannerTextScale.value = String(b.textScale || 100);
+  R.bannerOverlay.value = String(b.overlay ?? 35);
+  R.bannerShowAvatar.checked = b.showAvatar !== false;
+  R.bannerShowHandle.checked = b.showHandle !== false;
+  R.bannerShowSafeArea.checked = b.showSafeArea !== false;
+  R.bannerTextScaleValue.value = `${R.bannerTextScale.value}%`;
+  toggleCustomBannerSize();
+  R.bannerOverlayValue.value = `${R.bannerOverlay.value}%`;
+  renderBanner();
 }
 
 function syncBannerFromControls() {
+  const presetChanged = R.bannerPreset.value !== state.banner.preset;
+  const presetInfo = BANNER_PRESETS[R.bannerPreset.value];
   state.banner = {
     ...state.banner,
     preset: R.bannerPreset.value,
+    customWidth: clampInt(R.bannerWidth.value, 640, 6000, 1280),
+    customHeight: clampInt(R.bannerHeight.value, 320, 6000, 640),
     background: R.bannerBackground.value,
+    eyebrow: R.bannerEyebrow.value.trim(),
     headline: R.bannerHeadline.value.trim(),
     subtitle: R.bannerSubtitle.value.trim(),
+    cta: R.bannerCta.value.trim(),
     accent: R.bannerAccent.value,
     align: R.bannerAlign.value,
+    imagePosition: R.bannerPosition.value,
+    textScale: Number(R.bannerTextScale.value) || 100,
+    overlay: Number(R.bannerOverlay.value) || 0,
     showAvatar: R.bannerShowAvatar.checked,
     showHandle: R.bannerShowHandle.checked,
+    showSafeArea: R.bannerShowSafeArea.checked,
   };
+  if (presetChanged && presetInfo) {
+    state.banner.background = presetInfo.bg;
+    R.bannerBackground.value = state.banner.background;
+  }
+  R.bannerTextScaleValue.value = `${state.banner.textScale}%`;
+  R.bannerOverlayValue.value = `${state.banner.overlay}%`;
   lsSet("abm2_banner", JSON.stringify(state.banner));
   renderBanner();
+  queueUndoSnapshot();
 }
 
 function renderBanner() {
   if (!R.captureBanner) return;
   const b = state.banner;
-  const preset = BANNER_PRESETS[b.preset] || BANNER_PRESETS.github;
+  const preset = getBannerPreset();
   const name = R.displayName.value.trim() || "Your Name";
   const handle = fmtHandle(R.handle.value.trim() || "username");
   const title = R.titleLine.value.trim() || b.subtitle || "AI builder · designer · open source";
   const avatar = state.avatarData || makeAvatar(name);
   const bg = BANNER_BACKGROUNDS.includes(b.background) ? b.background : "midnight";
   const align = ["left", "center", "right"].includes(b.align) ? b.align : "left";
+  const position = ["center", "left", "right", "top", "bottom"].includes(b.imagePosition) ? b.imagePosition : "center";
 
   R.captureBanner.className = `bio-banner banner-bg-${bg} banner-align-${align}`;
   R.captureBanner.style.setProperty("--banner-accent", b.accent || "#a99bff");
+  R.captureBanner.style.setProperty("--banner-text-scale", `${Number(b.textScale) || 100}%`);
+  R.captureBanner.style.setProperty("--banner-overlay", `${(Number(b.overlay) || 0) / 100}`);
+  R.captureBanner.style.setProperty("--banner-image-position", position);
   R.bannerName.textContent = name;
+  R.bannerEyebrowPreview.textContent = b.eyebrow || "";
+  R.bannerEyebrowPreview.hidden = !b.eyebrow;
   R.bannerHeadlinePreview.textContent = b.headline || "Your next chapter starts here.";
   R.bannerSubtitlePreview.textContent = title;
   R.bannerHandlePreview.textContent = b.showHandle ? handle : "";
+  R.bannerCtaPreview.textContent = b.cta || "";
+  R.bannerCtaPreview.hidden = !b.cta;
   R.bannerAvatar.src = avatar;
   R.bannerAvatar.hidden = !b.showAvatar;
   R.bannerHandlePreview.hidden = !b.showHandle;
+  R.captureBanner.querySelector(".banner-safe-area").hidden = !b.showSafeArea;
+  R.bannerSafeLabel.textContent = b.showSafeArea ? "Safe area on" : "Safe area hidden";
   R.bannerSizeLabel.textContent = preset.label;
   R.captureBanner.dataset.width = preset.w;
   R.captureBanner.dataset.height = preset.h;
   R.captureBanner.style.aspectRatio = `${preset.w} / ${preset.h}`;
+  R.bannerImage.style.backgroundImage = b.imageData ? `url("${b.imageData}")` : "none";
+  R.bannerImage.style.backgroundPosition = position;
+}
+
+function toggleCustomBannerSize() {
+  const isCustom = R.bannerPreset.value === "custom";
+  const row = document.querySelector(".banner-custom-size");
+  if (row) row.hidden = !isCustom;
 }
 
 function resetBanner() {
   state.banner = {
-    preset: "github", background: "midnight", headline: "Building the future, one idea at a time.",
-    subtitle: "AI builder · designer · open source", accent: "#a99bff", align: "left", showAvatar: true, showHandle: true,
+    preset: "github", customWidth: 1280, customHeight: 640, background: "midnight", imageData: "", imagePosition: "center",
+    eyebrow: "AI BUILDER · OPEN SOURCE", headline: "Building the future, one idea at a time.", subtitle: "AI builder · designer · open source", cta: "Open to thoughtful collaborations →", accent: "#a99bff", align: "left", textScale: 100, overlay: 35, showAvatar: true, showHandle: true, showSafeArea: true,
   };
   bindBanner(false);
-  syncBannerFromControls();
-  setStatus("Banner reset.");
+  lsSet("abm2_banner", JSON.stringify(state.banner));
+  queueUndoSnapshot();
+  setStatus("Banner reset.", "ok");
 }
 
 async function downloadBanner() {
   try {
-    const preset = BANNER_PRESETS[state.banner.preset] || BANNER_PRESETS.github;
+    const preset = getBannerPreset();
     setStatus("Rendering banner...");
     const scaleFactor = Number(state.exportSettings.scale) || 2;
     const base = await html2canvas(R.captureBanner, { backgroundColor: state.exportSettings.transparent ? null : "#ffffff", scale: scaleFactor, useCORS: true, logging: false });
@@ -950,17 +1032,42 @@ async function downloadBanner() {
     canvas.width = preset.w;
     canvas.height = preset.h;
     const ctx = canvas.getContext("2d");
-    if (!state.exportSettings.transparent) { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, preset.w, preset.h); }
+    const format = R.bannerExportFormat.value === "jpeg" ? "jpeg" : "png";
+    if (format === "jpeg" || !state.exportSettings.transparent) { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, preset.w, preset.h); }
     ctx.drawImage(base, 0, 0, preset.w, preset.h);
     const link = document.createElement("a");
-    link.href = canvas.toDataURL("image/png");
-    link.download = `${slugify(state.exportSettings.filename || R.displayName.value.trim() || "bio-builder")}-${state.banner.preset}-banner.png`;
+    link.href = canvas.toDataURL(`image/${format}`, 0.94);
+    link.download = `${slugify(state.exportSettings.filename || R.displayName.value.trim() || "bio-builder")}-${state.banner.preset}-banner.${format === "jpeg" ? "jpg" : "png"}`;
     link.click();
-    setStatus("Banner downloaded.", "ok");
+    setStatus(`${preset.label} ${format.toUpperCase()} exported.`, "ok");
   } catch (err) {
     console.error(err);
-    setStatus("Banner export failed. Check console.", "error");
+    setStatus("Banner export failed. Try removing the background image or lowering export scale.", "error");
   }
+}
+
+function handleBannerImage(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (file.size > 4_000_000) { setStatus("Background image must be smaller than 4 MB.", "error"); e.target.value = ""; return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    state.banner.imageData = reader.result;
+    lsSet("abm2_banner", JSON.stringify(state.banner));
+    renderBanner();
+    queueUndoSnapshot();
+    setStatus("Background image added.", "ok");
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearBannerImage() {
+  state.banner.imageData = "";
+  R.bannerImageUpload.value = "";
+  lsSet("abm2_banner", JSON.stringify(state.banner));
+  renderBanner();
+  queueUndoSnapshot();
+  setStatus("Background image removed.", "ok");
 }
 
 // ─── CLEAR ───────────────────────────────────────────────────────────────────
@@ -981,17 +1088,13 @@ function clearForm() {
 }
 
 // ─── SHARE STATE ─────────────────────────────────────────────────────────────
-
-// Encode the current setup (excluding the API key and avatar) into a URL so the
-// whole form can be restored by anyone opening the link. Everything in the URL
-// is validated when decoded, so malformed payloads just fail silently.
 function buildSharePayload() {
   return {
     ...gatherForm(),
-    avatarData: "", // avatars are too large for a URL — dropped from share links
+    avatarData: "",
+    banner: { ...state.banner, imageData: "" },
   };
 }
-
 async function shareState() {
   let url;
   try {
@@ -1009,12 +1112,10 @@ async function shareState() {
     setStatus("Copied to clipboard failed — try again.", "error");
   }
 }
-
 function loadShareState() {
   const params = new URLSearchParams(window.location.search);
   const share = params.get("share");
   if (!share) return;
-
   try {
     const parsed = JSON.parse(decodeURIComponent(escape(atob(share))));
     if (parsed && typeof parsed === "object") applyForm(parsed);
@@ -1023,29 +1124,24 @@ function loadShareState() {
     console.warn("Share link could not be decoded.");
   }
 }
-
 R.shareStateBtn.addEventListener("click", shareState);
 
 // ─── HISTORY ─────────────────────────────────────────────────────────────────
-
 function addHistory(text) {
   if (!text) return;
   state.history = [text, ...state.history.filter((h) => h !== text)].slice(0, 5);
   saveHistoryLS();
   renderHistory();
 }
-
 function clearHistory() {
   state.history = [];
   saveHistoryLS();
   renderHistory();
   setStatus("History cleared.");
 }
-
 function saveHistoryLS() {
   lsSet(LS.history, JSON.stringify(state.history));
 }
-
 function renderHistory() {
   if (!state.history.length) {
     R.historyList.innerHTML = `<li class="history-empty">No bios yet — generate one to save it here.</li>`;
@@ -1057,7 +1153,7 @@ function renderHistory() {
         <div class="history-text">${esc(text)}</div>
         <div class="history-actions">
           <button class="history-action-btn use" data-haction="use" data-idx="${i}">Use</button>
-          <button class="history-action-btn"     data-haction="del" data-idx="${i}">Delete</button>
+          <button class="history-action-btn" data-haction="del" data-idx="${i}">Delete</button>
         </div>
       </li>
     `)
@@ -1126,6 +1222,7 @@ function applyForm(data) {
     state.exportSettings = { ...state.exportSettings, ...data.exportSettings };
     bindExportSettings();
   }
+  if (data.banner && typeof data.banner === "object") bindBanner(false);
   updatePreview();
   renderBanner();
   renderQualityChecks();
@@ -1193,6 +1290,11 @@ function renderProjects() {
       </li>
     `)
     .join("");
+}
+
+function clampInt(value, min, max, fallback) {
+  const n = Number.parseInt(value, 10);
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
 }
 
 // ─── PROJECT BACKUPS, HISTORY, TEMPLATES, BRAND KIT, QUALITY ─────────────────

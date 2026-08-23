@@ -891,3 +891,24 @@ input[type="file"] {
 .backup-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
 @media (max-width: 760px) { .network-status { display: none; } .template-grid { grid-template-columns: 1fr; } .export-options { grid-template-columns: 1fr 58px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+
+
+/* ===== COMPLETE BANNER EDITOR ===== */
+.banner-custom-size { display: none; }
+.banner-controls:has(#bannerPreset option[value="custom"]:checked) .banner-custom-size { display: grid; }
+.banner-upload-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.upload-button { display: inline-flex; align-items: center; justify-content: center; border: 1px dashed var(--border-focus); background: var(--soft); border-radius: 12px; padding: 9px 12px; font-size: .78rem; cursor: pointer; color: var(--text); }
+.upload-button:hover { border-color: var(--accent); color: var(--accent); }
+.range-field output { color: var(--accent); font-family: "IBM Plex Mono", monospace; font-size: .72rem; float: right; }
+.range-field input[type="range"] { accent-color: var(--accent); padding: 0; }
+.banner-format { min-width: 78px; }
+.banner-image, .banner-overlay { position: absolute; inset: 0; pointer-events: none; }
+.banner-image { z-index: 0; background-size: cover; background-repeat: no-repeat; opacity: .9; }
+.banner-overlay { z-index: 1; background: rgba(7, 8, 18, var(--banner-overlay, .35)); mix-blend-mode: multiply; }
+.banner-bg-paper .banner-overlay { background: rgba(255, 245, 230, var(--banner-overlay, .35)); mix-blend-mode: multiply; }
+.banner-grid-lines, .banner-glow { z-index: 2; }
+.banner-content { z-index: 3; transform: scale(var(--banner-text-scale, 100%)); transform-origin: center; }
+.banner-eyebrow { font-family: "IBM Plex Mono", monospace; font-size: clamp(.54rem, 1vw, .74rem); letter-spacing: .16em; opacity: .68; margin-bottom: 7px; }
+.banner-cta { display: inline-block; margin-top: 13px; padding: 5px 9px; border: 1px solid color-mix(in srgb, var(--banner-accent) 55%, transparent); border-radius: 999px; font-size: clamp(.62rem, 1.15vw, .82rem); color: var(--banner-accent); }
+.banner-watermark { z-index: 5; }
+@media (max-width: 640px) { .banner-upload-row { align-items: stretch; } .banner-upload-row > * { flex: 1 1 auto; } .banner-cta { margin-top: 8px; } }
