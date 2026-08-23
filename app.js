@@ -68,6 +68,23 @@ const R = {
   badgePlatform:        $("badgePlatform"),
   badgeTone:            $("badgeTone"),
   badgeAesthetic:       $("badgeAesthetic"),
+  bannerPreset:         $("bannerPreset"),
+  bannerBackground:     $("bannerBackground"),
+  bannerHeadline:        $("bannerHeadline"),
+  bannerSubtitle:        $("bannerSubtitle"),
+  bannerAccent:          $("bannerAccent"),
+  bannerAlign:           $("bannerAlign"),
+  bannerShowAvatar:      $("bannerShowAvatar"),
+  bannerShowHandle:      $("bannerShowHandle"),
+  captureBanner:         $("captureBanner"),
+  bannerAvatar:          $("bannerAvatar"),
+  bannerName:            $("bannerName"),
+  bannerHeadlinePreview: $("bannerHeadlinePreview"),
+  bannerSubtitlePreview: $("bannerSubtitlePreview"),
+  bannerHandlePreview:   $("bannerHandlePreview"),
+  bannerSizeLabel:       $("bannerSizeLabel"),
+  downloadBannerBtn:     $("downloadBannerBtn"),
+  resetBannerBtn:        $("resetBannerBtn"),
 };
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────────────
@@ -101,6 +118,15 @@ const PLATFORM_PRESETS = [
 ];
 
 const VARIANT_LABELS = ["Minimal", "Poetic", "Bold"];
+
+const BANNER_PRESETS = {
+  github:    { w: 1280, h: 640, label: "1280 × 640 px", bg: "midnight" },
+  linkedin: { w: 1584, h: 396, label: "1584 × 396 px", bg: "aurora" },
+  x:        { w: 1500, h: 500, label: "1500 × 500 px", bg: "sunset" },
+  youtube:  { w: 2560, h: 1440, label: "2560 × 1440 px", bg: "midnight" },
+  portfolio: { w: 1600, h: 600, label: "1600 × 600 px", bg: "paper" },
+};
+const BANNER_BACKGROUNDS = ["midnight", "aurora", "paper", "sunset", "plain"];
 
 // Custom (extra) link slots beyond the fixed four. Each slot has a label + URL.
 const MAX_CUSTOM_LINKS = 4;
@@ -187,6 +213,11 @@ const state = {
   avatarData:  "",
   activeField: null,
   sidebarCollapsed: false,
+  banner: {
+    preset: "github", background: "midnight", headline: "Building the future, one idea at a time.",
+    subtitle: "AI builder · designer · open source", accent: "#a99bff", align: "left",
+    showAvatar: true, showHandle: true,
+  },
 };
 
 // ─── BOOT ────────────────────────────────────────────────────────────────────
@@ -204,6 +235,8 @@ document.addEventListener("DOMContentLoaded", () => {
   renderHistory();
   renderProjects();
   updatePreview();
+  bindBanner();
+  renderBanner();
   setStatus("Ready.");
   if (state.sidebarCollapsed) collapseSidebar(true);
 });
@@ -263,6 +296,14 @@ function bindAll() {
   R.saveProjectBtn.addEventListener("click", promptSaveProject);
   R.saveProjectConfirmBtn.addEventListener("click", saveProject);
 
+  // Banner builder controls
+  [R.bannerPreset, R.bannerBackground, R.bannerHeadline, R.bannerSubtitle, R.bannerAccent, R.bannerAlign, R.bannerShowAvatar, R.bannerShowHandle]
+    .forEach((field) => field.addEventListener("input", syncBannerFromControls));
+  [R.bannerPreset, R.bannerBackground, R.bannerAlign, R.bannerShowAvatar, R.bannerShowHandle]
+    .forEach((field) => field.addEventListener("change", syncBannerFromControls));
+  R.downloadBannerBtn.addEventListener("click", downloadBanner);
+  R.resetBannerBtn.addEventListener("click", resetBanner);
+
   // Font chips
   R.fontStyles.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-font]");
@@ -282,7 +323,8 @@ function bindAll() {
   [
     R.platform, R.tone, R.aesthetic, R.displayName, R.handle,
     R.titleLine, R.keywords, R.about, R.cta, R.location,
-    R.websiteUrl, R.githubUrl, R.twitterUrl, R.instagramUrl, R.bioOutput
+    R.websiteUrl, R.githubUrl, R.twitterUrl, R.instagramUrl, R.bioOutput,
+    R.bannerHeadline, R.bannerSubtitle
   ].forEach((f) => {
     f.addEventListener("input", updatePreview);
     f.addEventListener("change", updatePreview);
@@ -646,6 +688,7 @@ function updatePreview() {
   R.previewAvatar.src           = state.avatarData || makeAvatar(name);
 
   renderLinkPills();
+  renderBanner();
   updateCharCount();
 }
 
@@ -767,6 +810,94 @@ async function downloadCard() {
   }
 }
 
+// ─── BIO BANNER BUILDER ───────────────────────────────────────────────────────
+
+function bindBanner() {
+  const saved = lsJSON("abm2_banner", null);
+  if (saved && typeof saved === "object") state.banner = { ...state.banner, ...saved };
+  R.bannerPreset.value = state.banner.preset;
+  R.bannerBackground.value = state.banner.background;
+  R.bannerHeadline.value = state.banner.headline;
+  R.bannerSubtitle.value = state.banner.subtitle;
+  R.bannerAccent.value = state.banner.accent;
+  R.bannerAlign.value = state.banner.align;
+  R.bannerShowAvatar.checked = state.banner.showAvatar;
+  R.bannerShowHandle.checked = state.banner.showHandle;
+}
+
+function syncBannerFromControls() {
+  state.banner = {
+    ...state.banner,
+    preset: R.bannerPreset.value,
+    background: R.bannerBackground.value,
+    headline: R.bannerHeadline.value.trim(),
+    subtitle: R.bannerSubtitle.value.trim(),
+    accent: R.bannerAccent.value,
+    align: R.bannerAlign.value,
+    showAvatar: R.bannerShowAvatar.checked,
+    showHandle: R.bannerShowHandle.checked,
+  };
+  lsSet("abm2_banner", JSON.stringify(state.banner));
+  renderBanner();
+}
+
+function renderBanner() {
+  if (!R.captureBanner) return;
+  const b = state.banner;
+  const preset = BANNER_PRESETS[b.preset] || BANNER_PRESETS.github;
+  const name = R.displayName.value.trim() || "Your Name";
+  const handle = fmtHandle(R.handle.value.trim() || "username");
+  const title = R.titleLine.value.trim() || b.subtitle || "AI builder · designer · open source";
+  const avatar = state.avatarData || makeAvatar(name);
+  const bg = BANNER_BACKGROUNDS.includes(b.background) ? b.background : "midnight";
+  const align = ["left", "center", "right"].includes(b.align) ? b.align : "left";
+
+  R.captureBanner.className = `bio-banner banner-bg-${bg} banner-align-${align}`;
+  R.captureBanner.style.setProperty("--banner-accent", b.accent || "#a99bff");
+  R.bannerName.textContent = name;
+  R.bannerHeadlinePreview.textContent = b.headline || "Your next chapter starts here.";
+  R.bannerSubtitlePreview.textContent = title;
+  R.bannerHandlePreview.textContent = b.showHandle ? handle : "";
+  R.bannerAvatar.src = avatar;
+  R.bannerAvatar.hidden = !b.showAvatar;
+  R.bannerHandlePreview.hidden = !b.showHandle;
+  R.bannerSizeLabel.textContent = preset.label;
+  R.captureBanner.dataset.width = preset.w;
+  R.captureBanner.dataset.height = preset.h;
+  R.captureBanner.style.aspectRatio = `${preset.w} / ${preset.h}`;
+}
+
+function resetBanner() {
+  state.banner = {
+    preset: "github", background: "midnight", headline: "Building the future, one idea at a time.",
+    subtitle: "AI builder · designer · open source", accent: "#a99bff", align: "left", showAvatar: true, showHandle: true,
+  };
+  bindBanner();
+  syncBannerFromControls();
+  setStatus("Banner reset.");
+}
+
+async function downloadBanner() {
+  try {
+    const preset = BANNER_PRESETS[state.banner.preset] || BANNER_PRESETS.github;
+    setStatus("Rendering banner...");
+    const base = await html2canvas(R.captureBanner, { backgroundColor: null, scale: 2, useCORS: true, logging: false });
+    const canvas = document.createElement("canvas");
+    canvas.width = preset.w;
+    canvas.height = preset.h;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(base, 0, 0, preset.w, preset.h);
+    const link = document.createElement("a");
+    link.href = canvas.toDataURL("image/png");
+    link.download = `${slugify(R.displayName.value.trim() || "bio-builder")}-${state.banner.preset}-banner.png`;
+    link.click();
+    setStatus("Banner downloaded.", "ok");
+  } catch (err) {
+    console.error(err);
+    setStatus("Banner export failed. Check console.", "error");
+  }
+}
+
 // ─── CLEAR ───────────────────────────────────────────────────────────────────
 
 function clearForm() {
@@ -780,6 +911,7 @@ function clearForm() {
   lsSet(LS_CUSTOM_LINKS, "[]");
   renderCustomLinks();
   updatePreview();
+  resetBanner();
   setStatus("Form cleared.");
 }
 
@@ -889,6 +1021,8 @@ function gatherForm() {
     bioOutput:    R.bioOutput.value,
     cardTheme:    state.cardTheme,
     font:         state.font,
+    avatarData:   state.avatarData,
+    banner:       state.banner,
   };
 }
 
@@ -909,9 +1043,15 @@ function applyForm(data) {
   R.instagramUrl.value = data.instagramUrl || "";
   applyCustomLinks(data.customLinks || []);
   R.bioOutput.value    = data.bioOutput    || "";
+  state.avatarData      = data.avatarData   || "";
   if (data.cardTheme) setCardTheme(data.cardTheme);
   if (data.font) setFont(data.font);
+  if (data.banner && typeof data.banner === "object") {
+    state.banner = { ...state.banner, ...data.banner };
+    bindBanner();
+  }
   updatePreview();
+  renderBanner();
 }
 
 function promptSaveProject() {

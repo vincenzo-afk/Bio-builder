@@ -34,6 +34,9 @@
         <li><a href="#" class="sidebar-link" data-section="card">
           <span class="nav-icon">🃏</span><span class="nav-label">Card Studio</span>
         </a></li>
+        <li><a href="#" class="sidebar-link" data-section="banner">
+          <span class="nav-icon">🖼</span><span class="nav-label">Banner Builder</span>
+        </a></li>
         <li><a href="#" class="sidebar-link" data-section="fonts">
           <span class="nav-icon">✍</span><span class="nav-label">Typography</span>
         </a></li>
@@ -445,6 +448,95 @@
               </div>
             </div>
 
+          </section>
+
+          <!-- BIO BANNER BUILDER -->
+          <section class="panel banner-panel" id="section-banner">
+            <div class="panel-head">
+              <div>
+                <p class="kicker">New workspace</p>
+                <h2>Bio Banner Builder</h2>
+              </div>
+              <span class="banner-live-pill">Live preview</span>
+            </div>
+            <p class="helper">Design a profile header for GitHub, LinkedIn, X, YouTube, or your portfolio. Your profile details flow into the banner automatically.</p>
+
+            <div class="banner-editor-grid">
+              <div class="banner-controls">
+                <div class="field">
+                  <label for="bannerPreset">Canvas preset</label>
+                  <select id="bannerPreset">
+                    <option value="github">GitHub profile · 1280 × 640</option>
+                    <option value="linkedin">LinkedIn cover · 1584 × 396</option>
+                    <option value="x">X / Twitter header · 1500 × 500</option>
+                    <option value="youtube">YouTube channel art · 2560 × 1440</option>
+                    <option value="portfolio">Portfolio hero · 1600 × 600</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="bannerBackground">Background</label>
+                  <select id="bannerBackground">
+                    <option value="midnight">Midnight gradient</option>
+                    <option value="aurora">Aurora glow</option>
+                    <option value="paper">Warm paper</option>
+                    <option value="sunset">Sunset gradient</option>
+                    <option value="plain">Accent solid</option>
+                  </select>
+                </div>
+                <div class="form-grid compact-grid">
+                  <div class="field">
+                    <label for="bannerHeadline">Headline</label>
+                    <input id="bannerHeadline" type="text" maxlength="70" placeholder="Building the future, one idea at a time." />
+                  </div>
+                  <div class="field">
+                    <label for="bannerSubtitle">Supporting line</label>
+                    <input id="bannerSubtitle" type="text" maxlength="100" placeholder="AI builder · designer · open source" />
+                  </div>
+                </div>
+                <div class="form-grid compact-grid">
+                  <div class="field">
+                    <label for="bannerAccent">Accent color</label>
+                    <input id="bannerAccent" class="color-input" type="color" value="#a99bff" />
+                  </div>
+                  <div class="field">
+                    <label for="bannerAlign">Text alignment</label>
+                    <select id="bannerAlign">
+                      <option value="left">Left</option>
+                      <option value="center">Center</option>
+                      <option value="right">Right</option>
+                    </select>
+                  </div>
+                </div>
+                <label class="banner-check"><input id="bannerShowAvatar" type="checkbox" checked /> <span>Show profile avatar</span></label>
+                <label class="banner-check"><input id="bannerShowHandle" type="checkbox" checked /> <span>Show handle and identity line</span></label>
+                <div class="toolbar banner-toolbar">
+                  <button class="primary-btn" id="downloadBannerBtn" type="button">⬇ Download banner</button>
+                  <button class="ghost-btn" id="resetBannerBtn" type="button">Reset design</button>
+                </div>
+              </div>
+
+              <div class="banner-preview-wrap">
+                <div class="banner-size-label"><span id="bannerSizeLabel">1280 × 640 px</span><span id="bannerSafeLabel">Safe area on</span></div>
+                <div class="banner-stage">
+                  <div id="captureBanner" class="bio-banner banner-bg-midnight banner-align-left">
+                    <div class="banner-grid-lines"></div>
+                    <div class="banner-glow"></div>
+                    <div class="banner-content">
+                      <img id="bannerAvatar" class="banner-avatar" alt="Profile avatar" />
+                      <div class="banner-copy">
+                        <p id="bannerName" class="banner-name">Your Name</p>
+                        <p id="bannerHeadlinePreview" class="banner-headline">Building the future, one idea at a time.</p>
+                        <p id="bannerSubtitlePreview" class="banner-subtitle">AI builder · designer · open source</p>
+                        <p id="bannerHandlePreview" class="banner-handle">@username</p>
+                      </div>
+                    </div>
+                    <div class="banner-safe-area" aria-hidden="true"></div>
+                    <span class="banner-watermark">✦ BIO BUILDER</span>
+                  </div>
+                </div>
+                <p class="helper banner-helper">The dotted frame marks a safe area for platforms that crop header images on smaller screens.</p>
+              </div>
+            </div>
           </section>
         </aside>
 

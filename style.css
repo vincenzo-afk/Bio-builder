@@ -822,3 +822,40 @@ input[type="file"] {
   .topbar-right { gap: 6px; }
   .preset-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ===== BIO BANNER BUILDER ===== */
+.banner-panel { overflow: hidden; }
+.banner-live-pill { color: var(--success); border: 1px solid rgba(111,208,162,.4); background: rgba(111,208,162,.1); padding: 6px 10px; border-radius: 999px; font-size: .75rem; white-space: nowrap; }
+.banner-editor-grid { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0, 1.4fr); gap: 18px; align-items: start; }
+.banner-controls { display: flex; flex-direction: column; gap: 12px; }
+.compact-grid { gap: 10px; }
+.color-input { padding: 4px; height: 44px; cursor: pointer; }
+.banner-check { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; }
+.banner-check input { width: auto; accent-color: var(--banner-accent, #a99bff); }
+.banner-toolbar { margin-top: 4px; }
+.banner-preview-wrap { min-width: 0; }
+.banner-size-label { display: flex; justify-content: space-between; color: var(--text2); font-size: .78rem; margin: 0 0 8px; }
+.banner-stage { background: var(--panel2); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 14px; overflow: hidden; }
+.bio-banner { --banner-accent: #a99bff; position: relative; width: 100%; aspect-ratio: 2 / 1; min-height: 260px; overflow: hidden; border-radius: 14px; color: #fff; isolation: isolate; }
+.banner-bg-midnight { background: radial-gradient(circle at 85% 15%, var(--banner-accent), transparent 34%), linear-gradient(135deg, #101124, #171822 58%, #0b0b11); }
+.banner-bg-aurora { background: radial-gradient(circle at 16% 20%, #65e6cc, transparent 35%), radial-gradient(circle at 88% 80%, var(--banner-accent), transparent 38%), #101827; }
+.banner-bg-paper { background: linear-gradient(135deg, #e8ddcc, #c8b8a3); color: #201d1a; }
+.banner-bg-sunset { background: linear-gradient(120deg, #3d183e, #ad4b52 55%, #f2a35b); }
+.banner-bg-plain { background: var(--banner-accent); }
+.banner-grid-lines { position: absolute; inset: 0; opacity: .12; background-image: linear-gradient(rgba(255,255,255,.7) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.7) 1px, transparent 1px); background-size: 30px 30px; mask-image: linear-gradient(to bottom, black, transparent); }
+.banner-glow { position: absolute; width: 48%; aspect-ratio: 1; right: -8%; top: -35%; border-radius: 50%; background: var(--banner-accent); opacity: .22; filter: blur(34px); }
+.banner-content { position: absolute; inset: 0; display: flex; align-items: center; gap: 20px; padding: 11% 10%; z-index: 2; }
+.banner-align-center .banner-content { justify-content: center; text-align: center; }
+.banner-align-right .banner-content { justify-content: flex-end; text-align: right; }
+.banner-avatar { width: clamp(58px, 11vw, 104px); height: clamp(58px, 11vw, 104px); flex: 0 0 auto; object-fit: cover; border-radius: 28%; border: 3px solid rgba(255,255,255,.85); box-shadow: 0 12px 35px rgba(0,0,0,.28); }
+.banner-copy { min-width: 0; max-width: 78%; }
+.banner-name { font-size: clamp(1rem, 2vw, 1.35rem); opacity: .78; margin-bottom: 7px; }
+.banner-headline { font-size: clamp(1.35rem, 4vw, 2.6rem); line-height: 1.05; font-weight: 800; letter-spacing: -.04em; color: var(--banner-accent); overflow-wrap: anywhere; }
+.banner-subtitle { font-size: clamp(.75rem, 1.5vw, 1rem); margin-top: 12px; opacity: .82; overflow-wrap: anywhere; }
+.banner-handle { margin-top: 12px; font-family: "IBM Plex Mono", monospace; font-size: .78rem; opacity: .65; }
+.banner-safe-area { position: absolute; inset: 9% 8%; border: 1px dashed rgba(255,255,255,.32); border-radius: 10px; z-index: 3; pointer-events: none; }
+.banner-watermark { position: absolute; right: 14px; bottom: 12px; z-index: 4; font-family: "IBM Plex Mono", monospace; font-size: .58rem; letter-spacing: .12em; opacity: .38; }
+.banner-bg-paper .banner-safe-area { border-color: rgba(0,0,0,.24); }
+.banner-helper { font-size: .78rem; }
+@media (max-width: 960px) { .banner-editor-grid { grid-template-columns: 1fr; } .banner-copy { max-width: 72%; } }
+@media (max-width: 640px) { .banner-content { padding: 12% 8%; gap: 12px; } .banner-stage { padding: 8px; } .banner-headline { font-size: clamp(1.1rem, 6vw, 1.7rem); } .banner-subtitle { margin-top: 7px; } .banner-safe-area { inset: 7% 5%; } }
